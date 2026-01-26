@@ -31,6 +31,7 @@
           buildInputs = with pkgs; [
             openssl
             glib
+            glib-networking
             gtk3
             libsoup_3
             webkitgtk_4_1
@@ -42,11 +43,14 @@
           LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
             openssl
             glib
+            glib-networking
             gtk3
             libsoup_3
             webkitgtk_4_1
             xdotool
           ];
+
+          GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
         };
       }
     );

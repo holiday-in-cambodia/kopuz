@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Album {
     pub id: String,
     pub title: String,
@@ -12,7 +12,7 @@ pub struct Album {
     pub cover_path: Option<PathBuf>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Track {
     pub path: PathBuf,
     pub album_id: String,
@@ -77,5 +77,38 @@ impl Library {
         } else {
             self.albums.push(album);
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Playlist {
+    pub id: String,
+    pub name: String,
+    pub tracks: Vec<PathBuf>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct PlaylistStore {
+    pub playlists: Vec<Playlist>,
+}
+
+impl PlaylistStore {
+    pub fn load(path: &Path) -> std::io::Result<Self> {
+        if !path.exists() {
+            return Ok(Self::default());
+        }
+        let data = fs::read_to_string(path)?;
+        let store = serde_json::from_str(&data)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
+        Ok(store)
+    }
+
+    pub fn save(&self, path: &Path) -> std::io::Result<()> {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let data = serde_json::to_string_pretty(self)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
+        fs::write(path, data)
     }
 }

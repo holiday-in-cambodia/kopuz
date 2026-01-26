@@ -10,7 +10,6 @@ pub fn Home() -> Element {
 
             div {
                 class: "mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-                // Placeholder for recent activity
                 for _i in 1..=3 {
                     div {
                         class: "bg-white/5 border border-white/5 rounded-xl p-6 hover:bg-white/10 transition-colors cursor-pointer group",

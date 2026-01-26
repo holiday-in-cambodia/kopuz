@@ -1,62 +1,60 @@
 use crate::reader::Library;
 use dioxus::prelude::*;
 
-#[derive(PartialEq, Clone, Copy)]
-enum SortOrder {
-    Title,
-    Artist,
-    Album,
-}
+use crate::components::stat_card::StatCard;
+use crate::components::playlist_modal::PlaylistModal;
+use crate::components::track_row::TrackRow;
+use crate::hooks::use_library_items::{use_library_items, SortOrder};
 
 #[component]
-pub fn LibraryPage(library: Signal<Library>, on_rescan: EventHandler) -> Element {
+pub fn LibraryPage(
+    library: Signal<Library>,
+    playlist_store: Signal<crate::reader::PlaylistStore>,
+    on_rescan: EventHandler
+) -> Element {
     let lib = library.read();
-    let mut sort_order = use_signal(|| SortOrder::Title);
+    
+    let items = use_library_items(library);
+    let mut sort_order = items.sort_order;
 
-    let artist_count = {
-        let mut artists = std::collections::HashSet::new();
-        for album in &lib.albums {
-            artists.insert(&album.artist);
-        }
-        for track in &lib.tracks {
-            artists.insert(&track.artist);
-        }
-        artists.len()
-    };
-    let mut all_tracks: Vec<_> = lib
-        .tracks
-        .iter()
-        .map(|track| {
-            let album = lib.albums.iter().find(|a| a.id == track.album_id);
-            let cover_url = album.and_then(|a| a.cover_path.as_ref()).map(|p| {
-                let p_str = p.to_string_lossy();
-                if p_str.starts_with("./") {
-                    let abs_path = std::env::current_dir()
-                        .unwrap_or_default()
-                        .join(&p_str[2..]);
-                    format!("artwork://local{}", abs_path.to_string_lossy())
-                } else {
-                    p_str.into_owned()
-                }
-            });
-            (track.clone(), cover_url)
-        })
-        .collect();
-
-    match *sort_order.read() {
-        SortOrder::Title => {
-            all_tracks.sort_by(|(a, _), (b, _)| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
-        }
-        SortOrder::Artist => all_tracks
-            .sort_by(|(a, _), (b, _)| a.artist.to_lowercase().cmp(&b.artist.to_lowercase())),
-        SortOrder::Album => {
-            all_tracks.sort_by(|(a, _), (b, _)| a.album.to_lowercase().cmp(&b.album.to_lowercase()))
-        }
-    }
+    let mut active_menu_track = use_signal(|| None::<std::path::PathBuf>);
+    let mut show_playlist_modal = use_signal(|| false);
+    let mut selected_track_for_playlist = use_signal(|| None::<std::path::PathBuf>);
 
     rsx! {
         div {
-            class: "p-8",
+            class: "p-8 relative min-h-full",
+            if *show_playlist_modal.read() {
+                PlaylistModal {
+                    playlist_store: playlist_store,
+                    on_close: move |_| show_playlist_modal.set(false),
+                    on_add_to_playlist: move |playlist_id: String| {
+                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                            let mut store = playlist_store.write();
+                            if let Some(playlist) = store.playlists.iter_mut().find(|p| p.id == playlist_id) {
+                                if !playlist.tracks.contains(&path) {
+                                    playlist.tracks.push(path);
+                                }
+                            }
+                        }
+                        show_playlist_modal.set(false);
+                        active_menu_track.set(None);
+                    },
+                    on_create_playlist: move |name: String| {
+                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                            let mut store = playlist_store.write();
+                            store.playlists.push(crate::reader::models::Playlist {
+                                id: uuid::Uuid::new_v4().to_string(),
+                                name,
+                                tracks: vec![path],
+                            });
+                        }
+                        show_playlist_modal.set(false);
+                        active_menu_track.set(None);
+                    }
+                }
+            }
+
             div {
                 class: "flex items-center justify-between mb-6",
                 h1 { class: "text-3xl font-bold text-white", "Your Library" }
@@ -72,8 +70,8 @@ pub fn LibraryPage(library: Signal<Library>, on_rescan: EventHandler) -> Element
                 class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12",
                 StatCard { label: "Tracks", value: "{lib.tracks.len()}", icon: "fa-music" }
                 StatCard { label: "Albums", value: "{lib.albums.len()}", icon: "fa-compact-disc" }
-                StatCard { label: "Artists", value: "{artist_count}", icon: "fa-user" }
-                StatCard { label: "Playlists", value: "0", icon: "fa-list" }
+                StatCard { label: "Artists", value: "{items.artist_count}", icon: "fa-user" }
+                StatCard { label: "Playlists", value: "{playlist_store.read().playlists.len()}", icon: "fa-list" }
             }
 
             div {
@@ -87,55 +85,44 @@ pub fn LibraryPage(library: Signal<Library>, on_rescan: EventHandler) -> Element
                 }
             }
             div {
-                class: "space-y-1",
+                class: "space-y-1 pb-20",
                 if lib.tracks.is_empty() {
                     p { class: "text-slate-500 italic", "Scanning your music collection..." }
                 } else {
-                    for (track , cover_url) in all_tracks {
-                        div {
-                            class: "flex items-center p-2 rounded-lg hover:bg-white/5 group transition-colors",
-                            div { class: "w-10 h-10 bg-white/5 rounded overflow-hidden flex items-center justify-center mr-4 shrink-0",
-                                if let Some(url) = cover_url {
-                                    img {
-                                        src: "{url}",
-                                        class: "w-full h-full object-cover"
+                    {items.all_tracks.iter().map(|(track, cover_url)| {
+                        let track_menu = track.clone();
+                        let track_add = track.clone();
+                        let track_key = track.path.display().to_string();
+                        let is_menu_open = active_menu_track.read().as_ref() == Some(&track.path);
+                        
+                        rsx! {
+                            TrackRow {
+                                key: "{track_key}",
+                                track: track.clone(),
+                                cover_url: cover_url.clone(),
+                                is_menu_open: is_menu_open,
+                                on_click_menu: move |_| {
+                                    if active_menu_track.read().as_ref() == Some(&track_menu.path) {
+                                        active_menu_track.set(None);
+                                    } else {
+                                        active_menu_track.set(Some(track_menu.path.clone()));
                                     }
-                                } else {
-                                    i { class: "fa-solid fa-music text-white/20" }
-                                }
-                            }
-                            div { class: "flex-1 min-w-0",
-                                p { class: "text-sm font-medium text-white/90 truncate",
-                                    "{track.title}"
-                                }
-                                p { class: "text-xs text-slate-500 truncate",
-                                    "{track.artist}"
-                                }
+                                },
+                                on_add_to_playlist: move |_| {
+                                    selected_track_for_playlist.set(Some(track_add.path.clone()));
+                                    show_playlist_modal.set(true);
+                                    active_menu_track.set(None);
+                                },
+                                on_close_menu: move |_| active_menu_track.set(None)
                             }
                         }
-                    }
+                    })}
                 }
             }
         }
     }
 }
 
-#[component]
-fn StatCard(label: &'static str, value: String, icon: &'static str) -> Element {
-    rsx! {
-        div {
-            class: "bg-[#0A0A0A] border border-white/5 p-5 rounded-xl flex items-center space-x-4",
-            div {
-                class: "w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center shrink-0",
-                i { class: "fa-solid {icon} text-lg text-white/60" }
-            }
-            div {
-                p { class: "text-xs font-medium text-slate-500 uppercase tracking-wider", "{label}" }
-                p { class: "text-2xl font-bold text-white", "{value}" }
-            }
-        }
-    }
-}
 
 #[component]
 fn SortButton(active: bool, label: &'static str, onclick: EventHandler) -> Element {

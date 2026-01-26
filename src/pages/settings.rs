@@ -17,11 +17,19 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                     div { class: "space-y-4",
                         SettingItem {
                             title: "Appearance",
-                            description: "Switch between dark and light themes.".to_string(),
+                            description: "Select your preferred color theme.".to_string(),
                             control: rsx! {
-                                select { class: "bg-white/5 border border-white/10 rounded px-3 py-1 text-sm text-white",
-                                    option { "Dark (System)" }
-                                    option { "Light" }
+                                select {
+                                    class: "bg-white/5 border border-white/10 rounded px-3 py-1 text-sm text-white focus:outline-none focus:border-white/20",
+                                    value: "{config.read().theme}",
+                                    onchange: move |evt| {
+                                        config.write().theme = evt.value();
+                                    },
+                                    option { value: "default", "Default" }
+                                    option { value: "gruvbox", "Gruvbox Material" }
+                                    option { value: "dracula", "Dracula" }
+                                    option { value: "nord", "Nord" }
+                                    option { value: "catppuccin", "Catppuccin Mocha" }
                                 }
                             }
                         }
