@@ -52,8 +52,20 @@ fn main() {
                 "image/jpeg"
             };
 
-            let decoded_path = decoded.as_ref();
-            let content = std::fs::read(std::path::Path::new(decoded_path))
+            let mut decoded_path = decoded.to_string();
+
+            if decoded_path.starts_with("/~") {
+                if let Ok(home) = std::env::var("HOME") {
+                    decoded_path = decoded_path.replacen("/~", &home, 1);
+                }
+            } else if decoded_path.starts_with('~') {
+                if let Ok(home) = std::env::var("HOME") {
+                    decoded_path = decoded_path.replacen('~', &home, 1);
+                }
+            }
+
+            let path = std::path::Path::new(&decoded_path);
+            let content = std::fs::read(path)
                 .or_else(|_| {
                     if decoded_path.starts_with('/') {
                         std::fs::read(std::path::Path::new(&decoded_path[1..]))
@@ -80,14 +92,23 @@ fn main() {
 fn App() -> Element {
     let mut library = use_signal(reader::Library::default);
     let mut current_route = use_signal(|| Route::Home);
-    let cache_dir = use_memo(|| std::path::Path::new("./cache").to_path_buf());
+    let cache_dir = use_memo(|| {
+        let path = if let Ok(home) = std::env::var("HOME") {
+            std::path::Path::new(&home).join(".cache/rusic")
+        } else {
+            std::path::Path::new("./cache").to_path_buf()
+        };
+        let _ = std::fs::create_dir_all(&path);
+        path
+    });
     let lib_path = use_memo(move || cache_dir().join("library.json"));
     let config_path = use_memo(move || cache_dir().join("config.json"));
     let config = use_signal(|| config::AppConfig::load(&config_path()));
     let playlist_path = use_memo(move || cache_dir().join("playlists.json"));
     let playlist_store =
         use_signal(|| reader::PlaylistStore::load(&playlist_path()).unwrap_or_default());
-    let cover_cache = use_memo(move || std::path::Path::new("./cache/covers").to_path_buf());
+    let cover_cache = use_memo(move || cache_dir().join("covers"));
+    let _ = std::fs::create_dir_all(cover_cache());
     let mut trigger_rescan = use_signal(|| 0);
     let current_playing = use_signal(|| 0);
     let player = use_signal(Player::new);

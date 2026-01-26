@@ -39,14 +39,9 @@
             webkitgtk_4_1
             xdotool
             alsa-lib
-          ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-            AppKit
-            WebKit
-            CoreServices
-            Security
-            CoreAudio
-            AudioToolbox
-          ]);
+          ] ++ lib.optionals stdenv.isDarwin [
+            pkgs.apple-sdk_15
+          ];
 
           LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath (
             [

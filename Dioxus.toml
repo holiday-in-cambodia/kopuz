@@ -1,21 +1,22 @@
 [application]
+name = "rusic"
+bundle_identifier = "com.temidaradev.rusic"
+
+[application.assets]
+# The folder which contains assets
+base_path = "assets"
 
 [web.app]
-
-# HTML title tag content
 title = "rusic"
 
-# include `assets` in web platform
 [web.resource]
-
-# Additional CSS style files
-style = ["assets/main.css", "assets/tailwind.css"]
-
-# Additional JavaScript files
+# Additional CSS style files for web only
+style = []
 script = []
 
 [web.resource.dev]
-
-# Javascript code file
-# serve: [dev-server] only
 script = []
+
+[web.tailwind]
+input = "tailwind.css"
+config = "tailwind.config.js"
