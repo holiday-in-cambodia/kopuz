@@ -96,7 +96,7 @@ pub fn Sidebar(props: SidebarProps) -> Element {
         }
 
         div {
-            class: "h-screen bg-[#050505] text-slate-400 flex flex-col flex-shrink-0 select-none relative transition-all duration-300 ease-out border-r border-white/5 {extra_padding}",
+            class: "h-full bg-black/40 text-slate-400 flex flex-col flex-shrink-0 select-none relative transition-all duration-300 ease-out border-r border-white/5 {extra_padding}",
             style: "width: {current_width}px",
 
             div {

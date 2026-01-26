@@ -1,6 +1,13 @@
 /* Default Theme (matches tailwind.css/main.css) */
 .theme-default {
-    /* Uses base variables from tailwind/main.css */
+    --color-black: #000000;
+    --color-white: #ffffff;
+    --color-slate-400: #94a3b8;
+    --color-slate-500: #64748b;
+    --color-green-500: #22c55e;
+    --color-indigo-600: #4f46e5;
+    --color-purple-700: #7e22ce;
+    --color-red-400: #f87171;
 }
 
 /* Gruvbox Material Dark */

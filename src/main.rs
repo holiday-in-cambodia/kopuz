@@ -235,7 +235,7 @@ fn App() -> Element {
                     }
                 }
                 div {
-                    class: "flex-1 overflow-y-auto bg-black",
+                    class: "flex-1 overflow-y-auto",
                     match *current_route.read() {
                         Route::Home => rsx! {
                             pages::home::Home {

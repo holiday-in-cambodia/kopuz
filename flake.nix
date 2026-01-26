@@ -32,23 +32,34 @@
             openssl
             glib
             glib-networking
-            gtk3
             libsoup_3
-            webkitgtk_4_1
-            xdotool
-            
             nodejs
-          ];
-
-          LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath [
-            openssl
-            glib
-            glib-networking
+          ] ++ lib.optionals stdenv.isLinux [
             gtk3
-            libsoup_3
             webkitgtk_4_1
             xdotool
-          ];
+            alsa-lib
+          ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+            AppKit
+            WebKit
+            CoreServices
+            Security
+            CoreAudio
+            AudioToolbox
+          ]);
+
+          LD_LIBRARY_PATH = with pkgs; lib.makeLibraryPath (
+            [
+              openssl
+              glib
+              glib-networking
+              libsoup_3
+            ] ++ lib.optionals stdenv.isLinux [
+              gtk3
+              webkitgtk_4_1
+              xdotool
+            ]
+          );
 
           GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
         };

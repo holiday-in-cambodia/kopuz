@@ -1,9 +1,15 @@
 /* App-wide styling */
+html,
 body {
-    background-color: #000000;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100%;
+}
+
+body {
+    background-color: var(--color-black, #000000);
+    color: var(--color-white, #ffffff);
+    font-family: 'JetBrains Mono', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
+    overflow: hidden;
 }
 
 #hero {
