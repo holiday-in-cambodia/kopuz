@@ -1,16 +1,24 @@
 use crate::use_player_controller::PlayerController;
 use dioxus::prelude::*;
+use discord_presence::Presence;
+use std::sync::Arc;
 
 pub fn use_player_task(ctrl: PlayerController) {
+    let presence: Option<Arc<Presence>> = use_context();
+    let mut last_title = use_signal(String::new);
+    let mut was_playing = use_signal(|| false);
+
     use_future(move || {
         let mut ctrl = ctrl;
+        let presence = presence.clone();
+
         async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
                 #[cfg(target_os = "macos")]
                 {
-                    use player::systemint::{SystemEvent, poll_event};
+                    use player::systemint::{poll_event, SystemEvent};
                     while let Some(event) = poll_event() {
                         match event {
                             SystemEvent::Play => ctrl.resume(),
@@ -24,7 +32,7 @@ pub fn use_player_task(ctrl: PlayerController) {
 
                 #[cfg(target_os = "linux")]
                 {
-                    use player::systemint::{SystemEvent, poll_event};
+                    use player::systemint::{poll_event, SystemEvent};
                     while let Some(event) = poll_event() {
                         match event {
                             SystemEvent::Play => ctrl.resume(),
@@ -36,14 +44,46 @@ pub fn use_player_task(ctrl: PlayerController) {
                     }
                 }
 
-                if *ctrl.is_playing.read() {
+                let is_playing = *ctrl.is_playing.read();
+
+                if is_playing {
                     let pos = ctrl.player.read().get_position();
                     ctrl.current_song_progress.set(pos.as_secs());
+
+                    if let Some(ref p) = presence {
+                        let title = ctrl.current_song_title.read().clone();
+                        let artist = ctrl.current_song_artist.read().clone();
+                        let album = ctrl.current_song_album.read().clone();
+                        let duration = *ctrl.current_song_duration.read();
+                        let progress = pos.as_secs();
+                        let cover = ctrl.current_song_cover_url.read().clone();
+
+                        if title != *last_title.peek() || !*was_playing.peek() {
+                            last_title.set(title.clone());
+                            println!("Cover URL: {}", cover);
+                            let cover_ref = if cover.starts_with("http") {
+                                Some(cover.as_str())
+                            } else {
+                                None
+                            };
+                            let _ = p.set_now_playing(
+                                &title, &artist, &album, progress, duration, cover_ref,
+                            );
+                        }
+                    }
 
                     if ctrl.player.read().is_empty() && !*ctrl.is_loading.read() {
                         ctrl.play_next();
                     }
+                } else if *was_playing.peek() {
+                    if let Some(ref p) = presence {
+                        let title = ctrl.current_song_title.read().clone();
+                        let artist = ctrl.current_song_artist.read().clone();
+                        let _ = p.set_paused(&title, &artist);
+                    }
                 }
+
+                was_playing.set(is_playing);
             }
         }
     });

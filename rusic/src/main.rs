@@ -3,16 +3,36 @@ use dioxus::desktop::tao::dpi::LogicalSize;
 #[cfg(target_os = "macos")]
 use dioxus::desktop::tao::platform::macos::WindowBuilderExtMacOS;
 use dioxus::prelude::*;
+use discord_presence::Presence;
 use player::player::Player;
 use rusic_route::Route;
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 const FAVICON: Asset = asset!("../assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("../assets/main.css");
 const THEME_CSS: Asset = asset!("../assets/themes.css");
 const TAILWIND_CSS: Asset = asset!("../assets/tailwind.css");
 
+static PRESENCE: std::sync::OnceLock<Option<Arc<Presence>>> = std::sync::OnceLock::new();
+
 fn main() {
+    let _ = dotenvy::dotenv();
+
+    let presence: Option<Arc<Presence>> =
+        std::env::var("DISCORD_APP_ID")
+            .ok()
+            .and_then(|id| match Presence::new(&id) {
+                Ok(p) => {
+                    println!("Discord presence connected!");
+                    Some(Arc::new(p))
+                }
+                Err(e) => {
+                    eprintln!("Failed to connect to Discord: {e}");
+                    None
+                }
+            });
+
+    PRESENCE.set(presence).ok();
     let mut window = dioxus::desktop::WindowBuilder::new()
         .with_title("Rusic")
         .with_resizable(true)
@@ -112,6 +132,10 @@ fn App() -> Element {
 
     let is_playing = use_signal(|| false);
     let is_fullscreen = use_signal(|| false);
+
+    let presence = PRESENCE.get().cloned().flatten();
+
+    provide_context(presence.clone());
 
     let mut selected_album_id = use_signal(String::new);
     let mut selected_artist_name = use_signal(String::new);
