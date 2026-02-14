@@ -4,6 +4,10 @@ Rusic is a modern, lightweight music player application built with Rust and the 
 
 ![Rusic Interface](https://github.com/user-attachments/assets/d5ece9e3-ca7a-4986-929f-c01198ab6ba1)
 
+Join to the discord server created for Rusic!!
+
+https://discord.gg/K6Bmzw2E4M
+
 ## Overview
 
 Rusic allows you to scan your local directories for audio files, or you jellyfin library, automatically organizing them into a browsable library. You can navigate by artists, albums, or explore your custom playlists. The application is built for performance and desktop integration, utilizing the power of Rust.
