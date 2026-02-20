@@ -8,6 +8,7 @@ use hooks::use_player_controller::PlayerController;
 use player::player;
 use reader::Library;
 use server::jellyfin::JellyfinRemote;
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[component]
@@ -401,14 +402,28 @@ pub fn LibraryPage(
                 }
             }
 
-            if !is_jellyfin {
-                div {
-                    class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12",
+            div {
+                class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12",
+                if !is_jellyfin {
                     StatCard { label: "Tracks", value: "{lib.tracks.len()}", icon: "fa-music" }
                     StatCard { label: "Albums", value: "{lib.albums.len()}", icon: "fa-compact-disc" }
                     StatCard { label: "Artists", value: "{items.artist_count}", icon: "fa-user" }
-                    StatCard { label: "Playlists", value: "{playlist_store.read().playlists.len()}", icon: "fa-list" }
+                } else {
+                    {
+                        let artist_count = {
+                            let mut artists = HashSet::new();
+                            for album in &lib.jellyfin_albums { artists.insert(&album.artist); }
+                            for track in &lib.jellyfin_tracks { artists.insert(&track.artist); }
+                            artists.len()
+                        };
+                        rsx! {
+                            StatCard { label: "Tracks", value: "{lib.jellyfin_tracks.len()}", icon: "fa-music" }
+                            StatCard { label: "Albums", value: "{lib.jellyfin_albums.len()}", icon: "fa-compact-disc" }
+                            StatCard { label: "Artists", value: "{artist_count}", icon: "fa-user" }
+                        }
+                    }
                 }
+                StatCard { label: "Playlists", value: "{playlist_store.read().playlists.len()}", icon: "fa-list" }
             }
 
             div {

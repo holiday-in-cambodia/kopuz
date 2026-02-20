@@ -1,4 +1,5 @@
 use crate::track_row::TrackRow;
+use config::{AppConfig, MusicSource};
 use dioxus::prelude::*;
 use reader::{Library, Track};
 
@@ -20,10 +21,12 @@ pub struct ShowcaseProps {
 
 #[component]
 pub fn Showcase(props: ShowcaseProps) -> Element {
+    let config = use_context::<Signal<AppConfig>>();
     let total_seconds: u64 = props.tracks.iter().map(|t| t.duration).sum();
     let duration_min = total_seconds / 60;
 
     let lib = props.library.read();
+    let is_jellyfin = config.read().active_source == MusicSource::Jellyfin;
 
     rsx! {
          div {
@@ -79,9 +82,28 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
 
                      for (idx, track) in props.tracks.iter().enumerate() {
                          {
-                             let cover_url = lib.albums.iter()
-                                .find(|a| a.id == track.album_id)
-                                .and_then(|a| utils::format_artwork_url(a.cover_path.as_ref()));
+                             let cover_url = if is_jellyfin {
+                                 if let Some(server) = &config.read().server {
+                                     let path_str = track.path.to_string_lossy();
+                                     let parts: Vec<&str> = path_str.split(':').collect();
+                                     if parts.len() >= 2 {
+                                         let id = parts[1];
+                                         let mut url = format!("{}/Items/{}/Images/Primary", server.url, id);
+                                         let mut params = Vec::new();
+                                         if parts.len() >= 3 { params.push(format!("tag={}", parts[2])); }
+                                         if let Some(token) = &server.access_token { params.push(format!("api_key={}", token)); }
+                                         if !params.is_empty() {
+                                             url.push('?');
+                                             url.push_str(&params.join("&"));
+                                         }
+                                         Some(url)
+                                     } else { None }
+                                 } else { None }
+                             } else {
+                                 lib.albums.iter()
+                                    .find(|a| a.id == track.album_id)
+                                    .and_then(|a| utils::format_artwork_url(a.cover_path.as_ref()))
+                             };
 
                              rsx! {
                                  TrackRow {

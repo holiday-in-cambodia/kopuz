@@ -328,6 +328,28 @@ fn App() -> Element {
                                 current_queue_index: current_queue_index,
                             }
                         },
+                        Route::Artist => rsx! {
+                            pages::artist::Artist {
+                                library: library,
+                                config: config,
+                                artist_name: selected_artist_name,
+                                playlist_store: playlist_store,
+                                player: player,
+                                is_playing: is_playing,
+                                current_playing: current_playing,
+                                current_song_cover_url: current_song_cover_url,
+                                current_song_title: current_song_title,
+                                current_song_artist: current_song_artist,
+                                current_song_duration: current_song_duration,
+                                current_song_progress: current_song_progress,
+                                queue: queue,
+                                current_queue_index: current_queue_index,
+                                on_close: move |_evt: ()| {
+                                    selected_artist_name.set(String::new());
+                                    current_route.set(Route::Home);
+                                }
+                            }
+                        },
                         Route::Playlists => rsx! {
                             pages::playlists::PlaylistsPage {
                                 playlist_store: playlist_store,
@@ -342,27 +364,6 @@ fn App() -> Element {
                                 current_song_progress: current_song_progress,
                                 queue: queue,
                                 current_queue_index: current_queue_index,
-                            }
-                        },
-                        Route::Artist => rsx! {
-                            pages::artist::Artist {
-                                library: library,
-                                config: config,
-                                artist_name: selected_artist_name,
-                                playlist_store: playlist_store,
-                                player: player,
-                                is_playing: is_playing,
-                                current_song_cover_url: current_song_cover_url,
-                                current_song_title: current_song_title,
-                                current_song_artist: current_song_artist,
-                                current_song_duration: current_song_duration,
-                                current_song_progress: current_song_progress,
-                                queue: queue,
-                                current_queue_index: current_queue_index,
-                                on_close: move |_evt: ()| {
-                                    selected_artist_name.set(String::new());
-                                    current_route.set(Route::Home);
-                                }
                             }
                         },
                         Route::Settings => rsx! { pages::settings::Settings { config } },

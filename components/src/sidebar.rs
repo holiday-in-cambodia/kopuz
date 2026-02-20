@@ -32,6 +32,11 @@ const TOP_MENU: &[SidebarItem] = &[
         icon: "fa-solid fa-music",
     },
     SidebarItem {
+        name: "Artist",
+        route: Route::Artist,
+        icon: "fa-solid fa-user",
+    },
+    SidebarItem {
         name: "Playlists",
         route: Route::Playlists,
         icon: "fa-solid fa-list",
