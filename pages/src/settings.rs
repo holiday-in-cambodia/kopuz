@@ -157,8 +157,8 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                             }
                         }
                         SettingItem {
-                            title: "MusicBrainz",
-                            description: "Enter your MusicBrainz token",
+                            title: "ListenBrainz",
+                            description: "Enter your ListenBrainz token",
                             control: rsx! {
                                 MusicBrainzSettings {
                                     current: config.read().musicbrainz_token.clone(),

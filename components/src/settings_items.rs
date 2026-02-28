@@ -145,7 +145,7 @@ pub fn MusicBrainzSettings(current: String, on_save: EventHandler<String>) -> El
                 class: "flex-1 bg-white/5 p-1 rounded-xl border border-white/5",
                 input {
                     class: "bg-transparent w-full px-3 py-2 text-sm text-white placeholder:text-white/50 outline-none",
-                    placeholder: "Enter your MusicBrainz token",
+                    placeholder: "Enter your ListenBrainz token",
                     value: "{input()}",
                     oninput: move |evt| {
                         input.set(evt.value());
