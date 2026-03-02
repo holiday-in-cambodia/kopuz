@@ -8,10 +8,10 @@ use player::player::Player;
 use rusic_route::Route;
 use std::{borrow::Cow, sync::Arc};
 
-const FAVICON: Asset = asset!("../assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("../assets/main.css");
-const THEME_CSS: Asset = asset!("../assets/themes.css");
-const TAILWIND_CSS: Asset = asset!("../assets/tailwind.css");
+const FAVICON: Asset = asset!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/favicon.ico"));
+const MAIN_CSS: Asset = asset!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/main.css"));
+const THEME_CSS: Asset = asset!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/themes.css"));
+const TAILWIND_CSS: Asset = asset!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/tailwind.css"));
 
 static PRESENCE: std::sync::OnceLock<Option<Arc<Presence>>> = std::sync::OnceLock::new();
 
