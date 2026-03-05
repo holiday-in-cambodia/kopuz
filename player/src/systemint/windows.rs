@@ -2,22 +2,25 @@ use std::sync::OnceLock;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use windows::{
-    Foundation::{TimeSpan, TypedEventHandler, Uri},
+    Foundation::{TimeSpan, TypedEventHandler},
     Media::{
         MediaPlaybackStatus, MediaPlaybackType, PlaybackPositionChangeRequestedEventArgs,
-        SystemMediaTransportControls, SystemMediaTransportControlsButton,
-        SystemMediaTransportControlsButtonPressedEventArgs,
+        SystemMediaTransportControls,
+        SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
         SystemMediaTransportControlsTimelineProperties,
     },
-    Storage::Streams::RandomAccessStreamReference,
     Win32::{
         Foundation::{HWND, LPARAM},
+        System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED},
         System::Threading::GetCurrentProcessId,
         System::WinRT::RoGetActivationFactory,
-        UI::WindowsAndMessaging::{EnumWindows, GetWindowThreadProcessId, IsWindowVisible},
+        UI::WindowsAndMessaging::{
+            CreateWindowExW, EnumWindows, GetWindowThreadProcessId, IsWindowVisible,
+            HWND_MESSAGE, WINDOW_EX_STYLE, WINDOW_STYLE,
+        },
     },
 };
-use windows::core::{BOOL, HSTRING, Ref};
+use windows::core::{BOOL, Ref, w};
 
 #[derive(Debug)]
 pub enum SystemEvent {
@@ -29,9 +32,13 @@ pub enum SystemEvent {
     Seek(f64),
 }
 
+struct SendableSmtc(SystemMediaTransportControls);
+unsafe impl Send for SendableSmtc {}
+unsafe impl Sync for SendableSmtc {}
+
 static EVENT_SENDER: OnceLock<UnboundedSender<SystemEvent>> = OnceLock::new();
 static EVENT_RECEIVER: OnceLock<Mutex<UnboundedReceiver<SystemEvent>>> = OnceLock::new();
-static SMTC: OnceLock<SystemMediaTransportControls> = OnceLock::new();
+static SMTC: OnceLock<SendableSmtc> = OnceLock::new();
 
 fn get_tx() -> UnboundedSender<SystemEvent> {
     EVENT_SENDER
@@ -60,6 +67,8 @@ pub async fn wait_event() -> Option<SystemEvent> {
 struct EnumData {
     pid: u32,
     hwnd: HWND,
+    // fallback for when no visible window exists yet 
+    any_hwnd: HWND,
 }
 
 unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
@@ -70,7 +79,30 @@ unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
         data.hwnd = hwnd;
         BOOL(0) // stop enumeration
     } else {
+        if pid == data.pid && data.any_hwnd.0.is_null() {
+            data.any_hwnd = hwnd;
+        }
         BOOL(1)
+    }
+}
+
+fn create_message_window() -> Option<HWND> {
+    let hwnd = unsafe {
+        CreateWindowExW(
+            WINDOW_EX_STYLE::default(),
+            w!("STATIC"),
+            w!("RusicSMTC"),
+            WINDOW_STYLE::default(),
+            0, 0, 0, 0,
+            Some(HWND_MESSAGE),
+            None,
+            None,
+            None,
+        )
+    };
+    match hwnd {
+        Ok(h) if !h.0.is_null() => Some(h),
+        _ => None,
     }
 }
 
@@ -78,6 +110,7 @@ fn find_main_hwnd() -> Option<HWND> {
     let mut data = EnumData {
         pid: unsafe { GetCurrentProcessId() },
         hwnd: HWND(std::ptr::null_mut()),
+        any_hwnd: HWND(std::ptr::null_mut()),
     };
 
     // return Err even on success
@@ -87,7 +120,16 @@ fn find_main_hwnd() -> Option<HWND> {
             LPARAM(&mut data as *mut EnumData as isize),
         )
     };
-    (!data.hwnd.0.is_null()).then_some(data.hwnd)
+
+    if !data.hwnd.0.is_null() {
+        return Some(data.hwnd);
+    }
+
+    // hacky
+    if !data.any_hwnd.0.is_null() {
+        return Some(data.any_hwnd);
+    }
+    create_message_window() 
 }
 
 // SMTC setup
@@ -99,7 +141,7 @@ fn setup_smtc(hwnd: HWND) {
     }
 
     let result = (|| unsafe {
-        let class_id = HSTRING::from("Windows.Media.SystemMediaTransportControls");
+        let class_id = windows::core::HSTRING::from("Windows.Media.SystemMediaTransportControls");
         let interop: ISystemMediaTransportControlsInterop = RoGetActivationFactory(&class_id)?;
         let smtc: SystemMediaTransportControls = interop.GetForWindow(hwnd)?;
 
@@ -111,6 +153,8 @@ fn setup_smtc(hwnd: HWND) {
         smtc.SetIsStopEnabled(true)?;
 
         let tx = get_tx();
+        let seek_tx = tx.clone();
+
         smtc.ButtonPressed(&TypedEventHandler::new(
             move |_: Ref<SystemMediaTransportControls>,
                   args: Ref<SystemMediaTransportControlsButtonPressedEventArgs>|
@@ -136,15 +180,14 @@ fn setup_smtc(hwnd: HWND) {
             },
         ))?;
 
-        let tx_seek = get_tx();
         smtc.PlaybackPositionChangeRequested(&TypedEventHandler::new(
             move |_: Ref<SystemMediaTransportControls>,
                   args: Ref<PlaybackPositionChangeRequestedEventArgs>|
                   -> windows::core::Result<()> {
                 if let Some(args) = args.as_ref() {
-                    let pos: TimeSpan = args.RequestedPlaybackPosition()?;
-                    let secs = pos.Duration as f64 / 1e7;  // TimeSpan::Duration is in 100-nanosecond ticks
-                    let _ = tx_seek.send(SystemEvent::Seek(secs));
+                    let pos = args.RequestedPlaybackPosition()?;
+                    let secs = pos.Duration as f64 / 10_000_000.0;
+                    let _ = seek_tx.send(SystemEvent::Seek(secs));
                 }
                 Ok(())
             },
@@ -155,7 +198,7 @@ fn setup_smtc(hwnd: HWND) {
 
     match result {
         Ok(smtc) => {
-            if SMTC.set(smtc).is_ok() {
+            if SMTC.set(SendableSmtc(smtc)).is_ok() {
                 println!("[windows] SMTC initialised");
             }
         }
@@ -163,33 +206,50 @@ fn setup_smtc(hwnd: HWND) {
     }
 }
 
+
 pub fn init() {
     if SMTC.get().is_some() {
         return;
     }
-    match find_main_hwnd() {
-        Some(hwnd) => setup_smtc(hwnd),
-        None => eprintln!("[windows] Could not find main HWND for SMTC"),
-    }
+    static INIT_ONCE: OnceLock<()> = OnceLock::new();
+    INIT_ONCE.get_or_init(|| {
+        std::thread::spawn(|| {
+            // CoInitializeEx must be called on the thread that uses WinRT/COM.
+            // The tokio thread pool does not do this, so setup_smtc must run here.
+            unsafe {
+                let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            }
+
+            match find_main_hwnd() {
+                Some(hwnd) => setup_smtc(hwnd),
+                None => eprintln!("[windows] Could not find main HWND for SMTC"),
+            }
+        });
+    });
+}
+
+// convert seconds to a Windows TimeSpan (unit is 100-nanosecond ticks)
+#[inline]
+fn secs_to_timespan(secs: f64) -> TimeSpan {
+    TimeSpan { Duration: (secs * 10_000_000.0) as i64 }
 }
 
 pub fn update_now_playing(
     title: &str,
     artist: &str,
     album: &str,
-    duration: f64,
-    position: f64,
+    _duration: f64,
+    _position: f64,
     playing: bool,
-    artwork_path: Option<&str>,
+    _artwork_path: Option<&str>,
 ) {
     // init in case init() wasn't called before the first track plays
     if SMTC.get().is_none() {
-        if let Some(hwnd) = find_main_hwnd() {
-            setup_smtc(hwnd);
-        }
+        init();
     }
 
     let Some(smtc) = SMTC.get() else { return };
+    let smtc = &smtc.0;
 
     let _ = smtc.SetPlaybackStatus(if playing {
         MediaPlaybackStatus::Playing
@@ -200,38 +260,26 @@ pub fn update_now_playing(
     if let Ok(updater) = smtc.DisplayUpdater() {
         let _ = updater.SetType(MediaPlaybackType::Music);
         if let Ok(props) = updater.MusicProperties() {
-            let _ = props.SetTitle(&HSTRING::from(title));
-            let _ = props.SetArtist(&HSTRING::from(artist));
-            let _ = props.SetAlbumTitle(&HSTRING::from(album));
+            let _ = props.SetTitle(&windows::core::HSTRING::from(title));
+            let _ = props.SetArtist(&windows::core::HSTRING::from(artist));
+            let _ = props.SetAlbumTitle(&windows::core::HSTRING::from(album));
         }
 
-        if let Some(path) = artwork_path {
-            // Pass http:// urls through, converts local paths to a file:/// URI
-            let uri_str = if path.starts_with("http://") || path.starts_with("https://") {
-                path.to_string()
-            } else {
-                format!("file:///{}", path.replace('\\', "/"))
-            };
-            if let Ok(uri) = Uri::CreateUri(&HSTRING::from(uri_str)) {
-                if let Ok(stream_ref) = RandomAccessStreamReference::CreateFromUri(&uri) {
-                    let _ = updater.SetThumbnail(&stream_ref);
-                }
-            }
-        }
-
+        // TODO: artwork
+        
         let _ = updater.Update();
     }
 
-    // Push timeline for a proper scrub bar
+    let duration = _duration;
+    let position = _position;
     if duration > 0.0 {
-        if let Ok(tl) = SystemMediaTransportControlsTimelineProperties::new() {
-            let ticks = |secs: f64| TimeSpan { Duration: (secs * 1e7) as i64 };
-            let _ = tl.SetStartTime(ticks(0.0));
-            let _ = tl.SetMinSeekTime(ticks(0.0));
-            let _ = tl.SetPosition(ticks(position));
-            let _ = tl.SetMaxSeekTime(ticks(duration));
-            let _ = tl.SetEndTime(ticks(duration));
-            let _ = smtc.UpdateTimelineProperties(&tl);
+        if let Ok(timeline) = SystemMediaTransportControlsTimelineProperties::new() {
+            let _ = timeline.SetStartTime(secs_to_timespan(0.0));
+            let _ = timeline.SetEndTime(secs_to_timespan(duration));
+            let _ = timeline.SetPosition(secs_to_timespan(position));
+            let _ = timeline.SetMinSeekTime(secs_to_timespan(0.0));
+            let _ = timeline.SetMaxSeekTime(secs_to_timespan(duration));
+            let _ = smtc.UpdateTimelineProperties(&timeline);
         }
     }
 }
