@@ -62,7 +62,7 @@ nix.settings = {
 Then install the package:
 
 ```nix
-# configuration.nix / machine.nix
+# configuration.nix || machine.nix
 environment.systemPackages = [
   rusic.packages.${system}.default
 ];
@@ -91,13 +91,26 @@ npm install
 dx serve --package rusic
 ```
 
-### MacOS Quarantine
+### macOS
 
-Because Apple hates open-source software, they have made it harder for users to install them since they don't explicitly "trust" them. Though the source code can be verified by yours truly. However, in the meantime, after downloading the `.dmg` and dragging the app to your /Applications, use:
+**Via Nix (recommended):**
+
+```bash
+nix run github:temidaradev/rusic
+```
+
+Or install permanently:
+
+```bash
+nix profile add github:temidaradev/rusic
+```
+
+**Quarantine note:** If you downloaded a `.dmg` instead, macOS may block it. Run once to clear the quarantine flag:
 
 ```bash
 xattr -d com.apple.quarantine /Applications/Rusic.app
 ```
+
 
 ### Where does Rusic keep its files?
 
