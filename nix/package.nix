@@ -16,6 +16,8 @@
 , xdotool ? null
 , wayland ? null
 , dbus ? null
+# Darwin only
+, sigtool ? null
 , extraBuildInputs ? []
 }:
 
@@ -35,6 +37,8 @@ rustPlatform.buildRustPackage {
     dioxus-cli
   ] ++ lib.optionals stdenv.isLinux [
     wrapGAppsHook3
+  ] ++ lib.optionals stdenv.isDarwin [
+    sigtool
   ];
 
   buildInputs = lib.optionals stdenv.isLinux [
