@@ -50,6 +50,18 @@ pub struct JellyfinServer {
     pub user_id: Option<String>,
 }
 
+impl JellyfinServer {
+    pub fn new(name: String, url: String) -> Self {
+        Self {
+            name,
+            // trim once here so every consumer gets a clean url to prevent broken links
+            url: url.trim_end_matches('/').to_string(),
+            access_token: None,
+            user_id: None,
+        }
+    }
+}
+
 fn default_theme() -> String {
     "default".to_string()
 }
@@ -104,7 +116,7 @@ impl AppConfig {
             return Self::default();
         }
         match fs::read_to_string(path) {
-            Ok(data) => match serde_json::from_str(&data) {
+            Ok(data) => match serde_json::from_str::<Self>(&data) {
                 Ok(config) => config,
                 Err(e) => {
                     eprintln!("Failed to parse config at {:?}: {}", path, e);
