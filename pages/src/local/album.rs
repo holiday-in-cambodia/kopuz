@@ -55,6 +55,13 @@ pub fn LocalAlbum(
                                 div {
                                     key: "{album.id}",
                                     class: "group relative p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors",
+                                    oncontextmenu: {
+                                        let id = id_for_menu.clone();
+                                        move |evt| {
+                                            evt.prevent_default();
+                                            open_album_menu.set(Some(id.clone()));
+                                        }
+                                    },
 
                                     div {
                                         class: "cursor-pointer",

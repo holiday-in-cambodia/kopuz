@@ -1,6 +1,6 @@
 use config::{AppConfig, MusicSource};
 use dioxus::prelude::*;
-use reader::{FavoritesStore, Library};
+use reader::{FavoritesStore, Library, PlaylistStore};
 
 use crate::jellyfin::favorites::JellyfinFavorites;
 use crate::local::favorites::LocalFavorites;
@@ -10,6 +10,7 @@ pub fn FavoritesPage(
     favorites_store: Signal<FavoritesStore>,
     library: Signal<Library>,
     config: Signal<AppConfig>,
+    playlist_store: Signal<PlaylistStore>,
     player: Signal<player::player::Player>,
     mut is_playing: Signal<bool>,
     mut current_playing: Signal<u64>,
@@ -38,6 +39,7 @@ pub fn FavoritesPage(
                     favorites_store,
                     library,
                     config,
+                    playlist_store,
                     queue,
                 }
             } else {
@@ -45,6 +47,7 @@ pub fn FavoritesPage(
                     favorites_store,
                     library,
                     config,
+                    playlist_store,
                     queue,
                 }
             }

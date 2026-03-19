@@ -1,9 +1,12 @@
+use components::playlist_modal::PlaylistModal;
+use components::selection_bar::SelectionBar;
 use components::track_row::TrackRow;
 use config::AppConfig;
 use dioxus::prelude::*;
 use hooks::use_player_controller::PlayerController;
-use reader::{FavoritesStore, Library};
+use reader::{FavoritesStore, Library, PlaylistStore};
 use server::jellyfin::JellyfinRemote;
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[component]
@@ -11,12 +14,19 @@ pub fn JellyfinFavorites(
     favorites_store: Signal<FavoritesStore>,
     library: Signal<Library>,
     config: Signal<AppConfig>,
+    playlist_store: Signal<PlaylistStore>,
     mut queue: Signal<Vec<reader::models::Track>>,
 ) -> Element {
     let mut ctrl = use_context::<PlayerController>();
     let mut active_menu_track = use_signal(|| None::<PathBuf>);
     let mut has_synced = use_signal(|| false);
     let mut is_syncing = use_signal(|| false);
+
+    // Multi-selection state
+    let mut is_selection_mode = use_signal(|| false);
+    let mut selected_tracks = use_signal(|| HashSet::<PathBuf>::new());
+    let mut show_playlist_modal = use_signal(|| false);
+    let mut selected_track_for_playlist = use_signal(|| None::<PathBuf>);
 
     use_effect(move || {
         if !*has_synced.read() {
@@ -112,9 +122,13 @@ pub fn JellyfinFavorites(
         .enumerate()
         .map(|(idx, (track, cover_url))| {
             let track_menu = track.clone();
+            let track_path = track.path.clone();
+            let track_select = track.path.clone();
+            let track_add = track.clone();
             let queue_source = queue_tracks.clone();
             let track_key = format!("{}-{}", track.path.display(), idx);
             let is_menu_open = active_menu_track.read().as_ref() == Some(&track.path);
+            let is_selected = selected_tracks.read().contains(&track_path);
 
             rsx! {
                 TrackRow {
@@ -122,6 +136,22 @@ pub fn JellyfinFavorites(
                     track: track.clone(),
                     cover_url: cover_url.clone(),
                     is_menu_open,
+                    is_selection_mode: is_selection_mode(),
+                    is_selected,
+                    on_long_press: move |_| {
+                        is_selection_mode.set(true);
+                        selected_tracks.write().insert(track_path.clone());
+                    },
+                    on_select: move |selected| {
+                        if selected {
+                            selected_tracks.write().insert(track_select.clone());
+                        } else {
+                            selected_tracks.write().remove(&track_select);
+                            if selected_tracks.read().is_empty() {
+                                is_selection_mode.set(false);
+                            }
+                        }
+                    },
                     on_click_menu: move |_| {
                         if active_menu_track.read().as_ref() == Some(&track_menu.path) {
                             active_menu_track.set(None);
@@ -129,7 +159,11 @@ pub fn JellyfinFavorites(
                             active_menu_track.set(Some(track_menu.path.clone()));
                         }
                     },
-                    on_add_to_playlist: move |_| active_menu_track.set(None),
+                    on_add_to_playlist: move |_| {
+                        selected_track_for_playlist.set(Some(track_add.path.clone()));
+                        show_playlist_modal.set(true);
+                        active_menu_track.set(None);
+                    },
                     on_close_menu: move |_| active_menu_track.set(None),
                     on_delete: move |_| active_menu_track.set(None),
                     on_play: move |_| {
@@ -142,6 +176,120 @@ pub fn JellyfinFavorites(
 
     rsx! {
         div {
+            if *show_playlist_modal.read() {
+                PlaylistModal {
+                    playlist_store,
+                    is_jellyfin: true,
+                    on_close: move |_| {
+                        show_playlist_modal.set(false);
+                        if is_selection_mode() {
+                            is_selection_mode.set(false);
+                            selected_tracks.write().clear();
+                        }
+                    },
+                    on_add_to_playlist: move |playlist_id: String| {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
+                            let pid = playlist_id.clone();
+                            spawn(async move {
+                                let conf = config.peek();
+                                if let Some(server) = &conf.server {
+                                    if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
+                                        let remote = JellyfinRemote::new(
+                                            &server.url,
+                                            Some(token),
+                                            &conf.device_id,
+                                            Some(user_id),
+                                        );
+                                        for path in selected_paths {
+                                            let parts: Vec<&str> = path.to_str().unwrap_or_default().split(':').collect();
+                                            if parts.len() >= 2 {
+                                                let item_id = parts[1];
+                                                let _ = remote.add_to_playlist(&pid, item_id).await;
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        show_playlist_modal.set(false);
+                        active_menu_track.set(None);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    },
+                    on_create_playlist: move |name: String| {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
+                            let playlist_name = name.clone();
+                            spawn(async move {
+                                let conf = config.peek();
+                                if let Some(server) = &conf.server {
+                                    if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
+                                        let remote = JellyfinRemote::new(
+                                            &server.url,
+                                            Some(token),
+                                            &conf.device_id,
+                                            Some(user_id),
+                                        );
+                                        let item_ids: Vec<String> = selected_paths
+                                            .iter()
+                                            .filter_map(|p| {
+                                                let parts: Vec<&str> = p.to_str()?.split(':').collect();
+                                                if parts.len() >= 2 {
+                                                    Some(parts[1].to_string())
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect();
+
+                                        if !item_ids.is_empty() {
+                                            let item_id_refs: Vec<&str> = item_ids.iter().map(|s| s.as_str()).collect();
+                                            let _ = remote
+                                                .create_playlist(&playlist_name, &item_id_refs)
+                                                .await;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        show_playlist_modal.set(false);
+                        active_menu_track.set(None);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    },
+                }
+            }
+
+            if is_selection_mode() {
+                SelectionBar {
+                    count: selected_tracks.read().len(),
+                    on_add_to_playlist: move |_| {
+                        show_playlist_modal.set(true);
+                    },
+                    on_delete: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    },
+                    on_cancel: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    }
+                }
+            }
+
             if *is_syncing.read() {
                 div {
                     class: "flex items-center gap-2 text-slate-400 text-sm mb-4",

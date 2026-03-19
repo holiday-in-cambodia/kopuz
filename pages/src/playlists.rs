@@ -29,7 +29,7 @@ pub fn PlaylistsPage(
 
     let mut show_add_playlist = use_signal(|| false);
     let mut playlist_name = use_signal(|| String::new());
-    let mut error = use_signal(|| Option::<String>::None);
+    let error = use_signal(|| Option::<String>::None);
 
     let handle_add_playlist = move |_| {
         let mut store = playlist_store.write();

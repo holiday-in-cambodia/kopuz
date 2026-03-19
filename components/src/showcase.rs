@@ -2,6 +2,8 @@ use crate::track_row::TrackRow;
 use config::{AppConfig, MusicSource};
 use dioxus::prelude::*;
 use reader::{Library, Track};
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct ShowcaseProps {
@@ -13,10 +15,17 @@ pub struct ShowcaseProps {
     pub on_play: EventHandler<usize>,
     pub on_add_to_playlist: Option<EventHandler<usize>>,
     pub on_delete_track: Option<EventHandler<usize>>,
+    pub on_remove_from_playlist: Option<EventHandler<usize>>,
     pub active_track: Option<std::path::PathBuf>,
     pub on_click_menu: Option<EventHandler<usize>>,
     pub on_close_menu: Option<EventHandler<()>>,
     pub actions: Option<Element>,
+    #[props(default = false)]
+    pub is_selection_mode: bool,
+    #[props(default = HashSet::new())]
+    pub selected_tracks: HashSet<PathBuf>,
+    pub on_select: Option<EventHandler<(usize, bool)>>,
+    pub on_long_press: Option<EventHandler<usize>>,
 }
 
 #[component]
@@ -30,6 +39,7 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
 
     rsx! {
          div {
+             class: "select-none",
              div {
                  class: "flex flex-col md:flex-row items-end gap-8 mb-12",
                  div { class: "w-64 h-64 rounded-xl bg-stone-800 overflow-hidden relative flex-shrink-0",
@@ -105,12 +115,26 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
                                     .and_then(|a| utils::format_artwork_url(a.cover_path.as_ref()))
                              };
 
+                             let is_selected = props.selected_tracks.contains(&track.path);
+
                              rsx! {
                                  TrackRow {
                                      key: "{track.path.display()}",
                                      track: track.clone(),
                                      cover_url: cover_url,
                                      is_menu_open: props.active_track.as_ref() == Some(&track.path),
+                                     is_selection_mode: props.is_selection_mode,
+                                     is_selected: is_selected,
+                                     on_select: move |selected| {
+                                        if let Some(handler) = &props.on_select {
+                                            handler.call((idx, selected));
+                                        }
+                                     },
+                                     on_long_press: move |_| {
+                                        if let Some(handler) = &props.on_long_press {
+                                            handler.call(idx);
+                                        }
+                                     },
                                      on_click_menu: move |_| {
                                         if let Some(handler) = &props.on_click_menu {
                                             handler.call(idx);
@@ -130,6 +154,11 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
                                         if let Some(handler) = &props.on_delete_track {
                                             handler.call(idx);
                                         }
+                                     },
+                                     on_remove_from_playlist: move |_| {
+                                         if let Some(handler) = &props.on_remove_from_playlist {
+                                             handler.call(idx);
+                                         }
                                      },
                                      on_play: move |_| props.on_play.call(idx)
                                  }

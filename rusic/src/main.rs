@@ -9,7 +9,7 @@ use discord_presence::Presence;
 use player::player::Player;
 use reader::FavoritesStore;
 use rusic_route::Route;
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 const FAVICON: Asset = asset!("../assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("../assets/main.css");
@@ -367,7 +367,7 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: "https://fonts.bunny.net/css?family=jetbrains-mono:400,500,700,800&display=swap" }
         document::Link { rel: "stylesheet", href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" }
         div {
-            class: "flex flex-col h-screen text-white {theme_class}",
+            class: "flex flex-col h-screen text-white select-none {theme_class}",
             style: "{background_style}",
             "data-reduce-animations": "{config.read().reduce_animations}",
             tabindex: "0",
@@ -522,6 +522,7 @@ fn App() -> Element {
                                 favorites_store,
                                 library,
                                 config,
+                                playlist_store,
                                 player,
                                 is_playing,
                                 current_playing,

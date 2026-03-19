@@ -10,6 +10,7 @@ pub mod search_bar;
 pub mod search_genre_detail;
 pub mod search_genres;
 pub mod search_results;
+pub mod selection_bar;
 pub mod settings_items;
 pub mod settings_popups;
 pub mod showcase;

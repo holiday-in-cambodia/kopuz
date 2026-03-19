@@ -1,6 +1,9 @@
 use dioxus::prelude::*;
 use player::player;
 use reader::{Library, PlaylistStore};
+use std::collections::HashSet;
+use std::path::PathBuf;
+
 #[component]
 pub fn PlaylistDetail(
     playlist_id: String,
@@ -20,9 +23,12 @@ pub fn PlaylistDetail(
     on_close: EventHandler<()>,
 ) -> Element {
     let store = playlist_store.read();
-    let mut active_menu_track = use_signal(|| None::<std::path::PathBuf>);
+    let mut active_menu_track = use_signal(|| None::<PathBuf>);
     let mut show_playlist_modal = use_signal(|| false);
-    let mut selected_track_for_playlist = use_signal(|| None::<std::path::PathBuf>);
+    let mut selected_track_for_playlist = use_signal(|| None::<PathBuf>);
+
+    let mut is_selection_mode = use_signal(|| false);
+    let mut selected_tracks = use_signal(|| HashSet::<PathBuf>::new());
 
     let (playlist_name, local_tracks_paths, is_jellyfin) =
         if let Some(p) = store.playlists.iter().find(|p| p.id == playlist_id) {
@@ -92,7 +98,7 @@ pub fn PlaylistDetail(
                                         .or_else(|| item.artists.as_ref().map(|a| a.join(", ")))
                                         .unwrap_or_default();
                                     new_tracks.push(reader::models::Track {
-                                        path: std::path::PathBuf::from(path_str),
+                                        path: PathBuf::from(path_str),
                                         album_id: item
                                             .album_id
                                             .map(|id| format!("jellyfin:{}", id))
@@ -106,6 +112,7 @@ pub fn PlaylistDetail(
                                         track_number: item.index_number,
                                         disc_number: item.parent_index_number,
                                         musicbrainz_release_id: None,
+                                        playlist_item_id: item.playlist_item_id,
                                     });
                                 }
                                 tracks.set(new_tracks);
@@ -161,10 +168,11 @@ pub fn PlaylistDetail(
     };
 
     let pid_for_delete = playlist_id.clone();
+    let pid_for_remove = playlist_id.clone();
 
     rsx! {
         div {
-            class: "w-full max-w-[1600px] mx-auto",
+            class: "w-full max-w-[1600px] mx-auto select-none",
 
             div { class: "flex items-center justify-between mb-8",
                 button {
@@ -181,6 +189,26 @@ pub fn PlaylistDetail(
                 cover_url: playlist_cover,
                 tracks: tracks_val.clone(),
                 library: library,
+                is_selection_mode: is_selection_mode(),
+                selected_tracks: selected_tracks.read().clone(),
+                on_long_press: move |idx: usize| {
+                    if let Some(t) = tracks.read().get(idx) {
+                        is_selection_mode.set(true);
+                        selected_tracks.write().insert(t.path.clone());
+                    }
+                },
+                on_select: move |(idx, selected): (usize, bool)| {
+                    if let Some(t) = tracks.read().get(idx) {
+                        if selected {
+                            selected_tracks.write().insert(t.path.clone());
+                        } else {
+                            selected_tracks.write().remove(&t.path);
+                            if selected_tracks.read().is_empty() {
+                                is_selection_mode.set(false);
+                            }
+                        }
+                    }
+                },
                 actions: rsx! {
                     if !is_jellyfin {
                         button {
@@ -195,17 +223,15 @@ pub fn PlaylistDetail(
                     }
                 },
                 on_play: {
-                    let q = tracks_val.clone();
                     let mut ctrl = use_context::<hooks::use_player_controller::PlayerController>();
                     move |idx: usize| {
-                        queue.set(q.clone());
+                        queue.set(tracks.peek().clone());
                         ctrl.play_track(idx);
                     }
                 },
                 on_add_to_playlist: {
-                    let q = tracks_val.clone();
                     move |idx: usize| {
-                        if let Some(t) = q.get(idx) {
+                        if let Some(t) = tracks.read().get(idx) {
                             selected_track_for_playlist.set(Some(t.path.clone()));
                             show_playlist_modal.set(true);
                             active_menu_track.set(None);
@@ -214,9 +240,8 @@ pub fn PlaylistDetail(
                 },
                 active_track: active_menu_track.read().clone(),
                 on_click_menu: {
-                    let q = tracks_val.clone();
                     move |idx: usize| {
-                        if let Some(t) = q.get(idx) {
+                        if let Some(t) = tracks.read().get(idx) {
                             if active_menu_track.read().as_ref() == Some(&t.path) {
                                 active_menu_track.set(None);
                             } else {
@@ -227,9 +252,8 @@ pub fn PlaylistDetail(
                 },
                 on_close_menu: move |_| active_menu_track.set(None),
                 on_delete_track: {
-                    let q = tracks_val.clone();
                     move |idx: usize| {
-                        if let Some(t) = q.get(idx) {
+                        if let Some(t) = tracks.read().get(idx) {
                             if !is_jellyfin {
                                 if std::fs::remove_file(&t.path).is_ok() {
                                     library.write().remove_track(&t.path);
@@ -241,24 +265,97 @@ pub fn PlaylistDetail(
                             active_menu_track.set(None);
                         }
                     }
+                },
+                on_remove_from_playlist: {
+                    let pid = pid_for_remove.clone();
+                    move |idx: usize| {
+                        if let Some(t) = tracks.read().get(idx) {
+                            if !is_jellyfin {
+                                let mut store = playlist_store.write();
+                                if let Some(playlist) = store.playlists.iter_mut().find(|p| p.id == pid) {
+                                    playlist.tracks.retain(|p| p != &t.path);
+                                }
+                            } else {
+                                let pid_clone = pid.clone();
+                                let entry_id_opt = t.playlist_item_id.clone();
+                                spawn(async move {
+                                    if let Some(entry_id) = entry_id_opt {
+                                        let conf = config.peek();
+                                        if let Some(server) = &conf.server {
+                                            if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
+                                                let remote = server::jellyfin::JellyfinRemote::new(
+                                                    &server.url,
+                                                    Some(token),
+                                                    &conf.device_id,
+                                                    Some(user_id),
+                                                );
+                                                let _ = remote.remove_from_playlist(&pid_clone, &entry_id).await;
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                            active_menu_track.set(None);
+                        }
+                    }
                 }
             }
+
+            if is_selection_mode() {
+                crate::selection_bar::SelectionBar {
+                    count: selected_tracks.read().len(),
+                    on_add_to_playlist: move |_| {
+                        show_playlist_modal.set(true);
+                    },
+                    on_delete: move |_| {
+                        let paths: Vec<_> = selected_tracks.read().iter().cloned().collect();
+                        if !is_jellyfin {
+                            for path in paths {
+                                if std::fs::remove_file(&path).is_ok() {
+                                    library.write().remove_track(&path);
+                                }
+                            }
+                        }
+                        selected_tracks.write().clear();
+                        is_selection_mode.set(false);
+                    },
+                    on_cancel: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    }
+                }
+            }
+
             if *show_playlist_modal.read() {
                 crate::playlist_modal::PlaylistModal {
                     playlist_store: playlist_store,
                     is_jellyfin: is_jellyfin,
-                    on_close: move |_| show_playlist_modal.set(false),
+                    on_close: move |_| {
+                        show_playlist_modal.set(false);
+                        if is_selection_mode() {
+                            is_selection_mode.set(false);
+                            selected_tracks.write().clear();
+                        }
+                    },
                     on_add_to_playlist: move |playlist_id: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             if !is_jellyfin {
                                 let mut store = playlist_store.write();
                                 if let Some(playlist) = store.playlists.iter_mut().find(|p| p.id == playlist_id) {
-                                    if !playlist.tracks.contains(&path) {
-                                        playlist.tracks.push(path);
+                                    for path in selected_paths {
+                                        if !playlist.tracks.contains(&path) {
+                                            playlist.tracks.push(path);
+                                        }
                                     }
                                 }
                             } else {
-                                let path_clone = path.clone();
                                 let pid = playlist_id.clone();
                                 spawn(async move {
                                     let conf = config.peek();
@@ -270,10 +367,12 @@ pub fn PlaylistDetail(
                                                 &conf.device_id,
                                                 Some(user_id),
                                             );
-                                            let parts: Vec<&str> = path_clone.to_str().unwrap_or_default().split(':').collect();
-                                            if parts.len() >= 2 {
-                                                let item_id = parts[1];
-                                                let _ = remote.add_to_playlist(&pid, item_id).await;
+                                            for path in selected_paths {
+                                                let parts: Vec<&str> = path.to_str().unwrap_or_default().split(':').collect();
+                                                if parts.len() >= 2 {
+                                                    let item_id = parts[1];
+                                                    let _ = remote.add_to_playlist(&pid, item_id).await;
+                                                }
                                             }
                                         }
                                     }
@@ -281,18 +380,26 @@ pub fn PlaylistDetail(
                             }
                         }
                         show_playlist_modal.set(false);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     },
                     on_create_playlist: move |name: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             if !is_jellyfin {
                                 let mut store = playlist_store.write();
                                 store.playlists.push(reader::models::Playlist {
                                     id: uuid::Uuid::new_v4().to_string(),
                                     name,
-                                    tracks: vec![path],
+                                    tracks: selected_paths,
                                 });
                             } else {
-                                let path_clone = path.clone();
                                 let playlist_name = name.clone();
                                 spawn(async move {
                                     let conf = config.peek();
@@ -304,10 +411,13 @@ pub fn PlaylistDetail(
                                                 &conf.device_id,
                                                 Some(user_id),
                                             );
-                                            let parts: Vec<&str> = path_clone.to_str().unwrap_or_default().split(':').collect();
-                                            if parts.len() >= 2 {
-                                                let item_id = parts[1];
-                                                let _ = remote.create_playlist(&playlist_name, &[item_id]).await;
+                                            let item_ids: Vec<String> = selected_paths.iter().filter_map(|p| {
+                                                let parts: Vec<&str> = p.to_str()?.split(':').collect();
+                                                if parts.len() >= 2 { Some(parts[1].to_string()) } else { None }
+                                            }).collect();
+                                            if !item_ids.is_empty() {
+                                                let item_id_refs: Vec<&str> = item_ids.iter().map(|s| s.as_str()).collect();
+                                                let _ = remote.create_playlist(&playlist_name, &item_id_refs).await;
                                             }
                                         }
                                     }
@@ -315,6 +425,8 @@ pub fn PlaylistDetail(
                             }
                         }
                         show_playlist_modal.set(false);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     }
                 }
             }

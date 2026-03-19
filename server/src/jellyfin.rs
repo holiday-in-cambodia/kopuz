@@ -106,6 +106,8 @@ pub struct ItemsResponse {
 pub struct Item {
     pub name: String,
     pub id: String,
+    #[serde(rename = "PlaylistItemId")]
+    pub playlist_item_id: Option<String>,
     #[serde(rename = "Type")]
     pub item_type: String,
     pub run_time_ticks: Option<u64>,
@@ -464,7 +466,7 @@ impl JellyfinRemote {
             self.device_id, APP_VERSION, token
         );
 
-        let fields = "DateCreated,DateLastMediaAdded,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container".to_string();
+        let fields = "DateCreated,DateLastMediaAdded,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container,PlaylistItemId".to_string();
         let resp = self
             .http_client
             .get(&url)
@@ -480,6 +482,42 @@ impl JellyfinRemote {
 
         let items_resp: ItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
         Ok(items_resp.items)
+    }
+
+    pub async fn remove_from_playlist(
+        &self,
+        playlist_id: &str,
+        entry_id: &str,
+    ) -> Result<(), String> {
+        let token = self
+            .access_token
+            .as_ref()
+            .ok_or("No access token available")?;
+
+        let url = format!("{}/Playlists/{}/Items", self.base_url, playlist_id);
+
+        let auth_header = format!(
+            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            self.device_id, APP_VERSION, token
+        );
+
+        let resp = self
+            .http_client
+            .delete(&url)
+            .query(&[("EntryIds", entry_id)])
+            .header("X-Emby-Authorization", auth_header)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        if !resp.status().is_success() {
+            return Err(format!(
+                "Failed to remove item from playlist: {}",
+                resp.status()
+            ));
+        }
+
+        Ok(())
     }
 
     pub async fn get_genres(&self) -> Result<Vec<Genre>, String> {

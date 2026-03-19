@@ -150,6 +150,7 @@ pub fn JellyfinHome(
                                             track_number: item.index_number,
                                             disc_number: item.parent_index_number,
                                             musicbrainz_release_id: None,
+                                            playlist_item_id: None,
                                         };
                                         new_tracks.push(track);
                                     }

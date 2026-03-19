@@ -1,14 +1,19 @@
 use components::dots_menu::{DotsMenu, MenuAction};
+use components::playlist_modal::PlaylistModal;
+use components::selection_bar::SelectionBar;
+use components::track_row::TrackRow;
 use config::AppConfig;
 use dioxus::prelude::*;
 use reader::{Library, PlaylistStore};
 use server::jellyfin::JellyfinRemote;
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 #[component]
 pub fn JellyfinAlbum(
     library: Signal<Library>,
     config: Signal<AppConfig>,
-    album_id: Signal<String>,
+    mut album_id: Signal<String>,
     playlist_store: Signal<PlaylistStore>,
     mut queue: Signal<Vec<reader::models::Track>>,
     mut open_album_menu: Signal<Option<String>>,
@@ -98,12 +103,18 @@ pub fn JellyfinAlbum(
                                 div {
                                     key: "{album_id_val}",
                                     class: "group relative p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors",
+                                    oncontextmenu: {
+                                        let id = id_for_menu.clone();
+                                        move |evt| {
+                                            evt.prevent_default();
+                                            open_album_menu.set(Some(id.clone()));
+                                        }
+                                    },
 
                                     div {
                                         class: "cursor-pointer",
-                                        onclick: {
-                                            let id = id_for_nav.clone();
-                                            move |_| album_id.set(id.clone())
+                                        onclick: move |_| {
+                                            album_id.set(id_for_nav.clone());
                                         },
                                         div { class: "aspect-square rounded-lg bg-stone-800 mb-3 overflow-hidden relative",
                                             if let Some(url) = &cover_url {
@@ -175,9 +186,13 @@ pub fn JellyfinAlbumDetails(
     on_close: EventHandler<()>,
 ) -> Element {
     let mut ctrl = use_context::<hooks::use_player_controller::PlayerController>();
-    let mut active_menu_track = use_signal(|| None::<std::path::PathBuf>);
+    let mut active_menu_track = use_signal(|| None::<PathBuf>);
     let mut show_playlist_modal = use_signal(|| false);
-    let mut selected_track_for_playlist = use_signal(|| None::<std::path::PathBuf>);
+    let mut selected_track_for_playlist = use_signal(|| None::<PathBuf>);
+
+    // Multi-selection state
+    let mut is_selection_mode = use_signal(|| false);
+    let mut selected_tracks = use_signal(|| HashSet::<PathBuf>::new());
 
     let mut album_id_sig = use_signal(|| album_jellyfin_id.clone());
     use_effect(move || {
@@ -290,13 +305,25 @@ pub fn JellyfinAlbumDetails(
             class: "w-full max-w-[1600px] mx-auto",
 
             if *show_playlist_modal.read() {
-                components::playlist_modal::PlaylistModal {
+                PlaylistModal {
                     playlist_store,
                     is_jellyfin: true,
-                    on_close: move |_| show_playlist_modal.set(false),
+                    on_close: move |_| {
+                        show_playlist_modal.set(false);
+                        if is_selection_mode() {
+                            is_selection_mode.set(false);
+                            selected_tracks.write().clear();
+                        }
+                    },
                     on_add_to_playlist: move |playlist_id: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
-                            let path_clone = path.clone();
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             let pid = playlist_id.clone();
                             spawn(async move {
                                 let conf = config.peek();
@@ -308,10 +335,12 @@ pub fn JellyfinAlbumDetails(
                                             &conf.device_id,
                                             Some(user_id),
                                         );
-                                        let parts: Vec<&str> = path_clone.to_str().unwrap_or_default().split(':').collect();
-                                        if parts.len() >= 2 {
-                                            let item_id = parts[1];
-                                            let _ = remote.add_to_playlist(&pid, item_id).await;
+                                        for path in selected_paths {
+                                            let parts: Vec<&str> = path.to_str().unwrap_or_default().split(':').collect();
+                                            if parts.len() >= 2 {
+                                                let item_id = parts[1];
+                                                let _ = remote.add_to_playlist(&pid, item_id).await;
+                                            }
                                         }
                                     }
                                 }
@@ -319,10 +348,18 @@ pub fn JellyfinAlbumDetails(
                         }
                         show_playlist_modal.set(false);
                         active_menu_track.set(None);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     },
                     on_create_playlist: move |name: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
-                            let path_clone = path.clone();
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             let playlist_name = name.clone();
                             spawn(async move {
                                 let conf = config.peek();
@@ -334,10 +371,23 @@ pub fn JellyfinAlbumDetails(
                                             &conf.device_id,
                                             Some(user_id),
                                         );
-                                        let parts: Vec<&str> = path_clone.to_str().unwrap_or_default().split(':').collect();
-                                        if parts.len() >= 2 {
-                                            let item_id = parts[1];
-                                            let _ = remote.create_playlist(&playlist_name, &[item_id]).await;
+                                        let item_ids: Vec<String> = selected_paths
+                                            .iter()
+                                            .filter_map(|p| {
+                                                let parts: Vec<&str> = p.to_str()?.split(':').collect();
+                                                if parts.len() >= 2 {
+                                                    Some(parts[1].to_string())
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect();
+
+                                        if !item_ids.is_empty() {
+                                            let item_id_refs: Vec<&str> = item_ids.iter().map(|s| s.as_str()).collect();
+                                            let _ = remote
+                                                .create_playlist(&playlist_name, &item_id_refs)
+                                                .await;
                                         }
                                     }
                                 }
@@ -345,6 +395,25 @@ pub fn JellyfinAlbumDetails(
                         }
                         show_playlist_modal.set(false);
                         active_menu_track.set(None);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    }
+                }
+            }
+
+            if is_selection_mode() {
+                SelectionBar {
+                    count: selected_tracks.read().len(),
+                    on_add_to_playlist: move |_| {
+                        show_playlist_modal.set(true);
+                    },
+                    on_delete: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    },
+                    on_cancel: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     }
                 }
             }
@@ -415,15 +484,33 @@ pub fn JellyfinAlbumDetails(
                             let track_key = track.path.display().to_string();
                             let track_menu = track.clone();
                             let track_add  = track.clone();
+                            let track_path = track.path.clone();
+                            let track_select = track.path.clone();
                             let is_menu_open = active_menu_track.read().as_ref() == Some(&track.path);
                             let album_queue: Vec<reader::models::Track> =
                                 album_tracks().iter().map(|(t, _)| t.clone()).collect();
                             rsx! {
-                                components::track_row::TrackRow {
+                                TrackRow {
                                     key: "{track_key}",
                                     track: track.clone(),
                                     cover_url: track_cover_url,
                                     is_menu_open,
+                                    is_selection_mode: is_selection_mode(),
+                                    is_selected: selected_tracks.read().contains(&track_path),
+                                    on_long_press: move |_| {
+                                        is_selection_mode.set(true);
+                                        selected_tracks.write().insert(track_path.clone());
+                                    },
+                                    on_select: move |selected| {
+                                        if selected {
+                                            selected_tracks.write().insert(track_select.clone());
+                                        } else {
+                                            selected_tracks.write().remove(&track_select);
+                                            if selected_tracks.read().is_empty() {
+                                                is_selection_mode.set(false);
+                                            }
+                                        }
+                                    },
                                     on_click_menu: move |_| {
                                         if active_menu_track.read().as_ref() == Some(&track_menu.path) {
                                             active_menu_track.set(None);

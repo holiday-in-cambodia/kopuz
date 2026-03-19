@@ -72,7 +72,7 @@ pub fn Bottombar(
 
     rsx! {
         div {
-            class: "h-24 bg-black/60 border-t border-white/5 px-4 flex items-center justify-between select-none shrink-0",
+            class: "h-24 bg-black/60 border-t border-white/5 px-4 flex items-center justify-between select-text shrink-0",
 
             div {
                 class: "flex items-center gap-4 w-1/4",

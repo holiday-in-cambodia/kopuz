@@ -26,6 +26,8 @@ pub struct Track {
     pub disc_number: Option<u32>,
     #[serde(default)]
     pub musicbrainz_release_id: Option<String>,
+    #[serde(default)]
+    pub playlist_item_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]

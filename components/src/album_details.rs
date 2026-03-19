@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use player::player;
 use reader::Library;
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 #[component]
 pub fn AlbumDetails(
@@ -18,9 +20,12 @@ pub fn AlbumDetails(
     mut current_queue_index: Signal<usize>,
     on_close: EventHandler<()>,
 ) -> Element {
-    let mut active_menu_track = use_signal(|| None::<std::path::PathBuf>);
+    let mut active_menu_track = use_signal(|| None::<PathBuf>);
     let mut show_playlist_modal = use_signal(|| false);
-    let mut selected_track_for_playlist = use_signal(|| None::<std::path::PathBuf>);
+    let mut selected_track_for_playlist = use_signal(|| None::<PathBuf>);
+
+    let mut is_selection_mode = use_signal(|| false);
+    let mut selected_tracks = use_signal(|| HashSet::<PathBuf>::new());
 
     let lib = library.read();
     let album = match lib.albums.iter().find(|a| a.id == album_id) {
@@ -56,6 +61,32 @@ pub fn AlbumDetails(
                 cover_url: album_cover,
                 tracks: tracks.clone(),
                 library: library,
+                is_selection_mode: is_selection_mode(),
+                selected_tracks: selected_tracks.read().clone(),
+                on_long_press: {
+                    let t_list = tracks.clone();
+                    move |idx: usize| {
+                        if let Some(t) = t_list.get(idx) {
+                            is_selection_mode.set(true);
+                            selected_tracks.write().insert(t.path.clone());
+                        }
+                    }
+                },
+                on_select: {
+                    let t_list = tracks.clone();
+                    move |(idx, selected): (usize, bool)| {
+                        if let Some(t) = t_list.get(idx) {
+                            if selected {
+                                selected_tracks.write().insert(t.path.clone());
+                            } else {
+                                selected_tracks.write().remove(&t.path);
+                                if selected_tracks.read().is_empty() {
+                                    is_selection_mode.set(false);
+                                }
+                            }
+                        }
+                    }
+                },
                 active_track: active_menu_track.read().clone(),
                 on_click_menu: {
                     let q = tracks.clone();
@@ -148,32 +179,84 @@ pub fn AlbumDetails(
                 }
             }
 
+            if is_selection_mode() {
+                crate::selection_bar::SelectionBar {
+                    count: selected_tracks.read().len(),
+                    on_add_to_playlist: move |_| {
+                        show_playlist_modal.set(true);
+                    },
+                    on_delete: move |_| {
+                        let paths: Vec<_> = selected_tracks.read().iter().cloned().collect();
+                        for path in paths {
+                            if std::fs::remove_file(&path).is_ok() {
+                                library.write().remove_track(&path);
+                            }
+                        }
+                        selected_tracks.write().clear();
+                        is_selection_mode.set(false);
+                        let cache_dir = std::path::Path::new("./cache").to_path_buf();
+                        let lib_path = cache_dir.join("library.json");
+                        let _ = library.read().save(&lib_path);
+                    },
+                    on_cancel: move |_| {
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
+                    }
+                }
+            }
+
             if *show_playlist_modal.read() {
                 crate::playlist_modal::PlaylistModal {
                     playlist_store: playlist_store,
                     is_jellyfin: false,
-                    on_close: move |_| show_playlist_modal.set(false),
+                    on_close: move |_| {
+                        show_playlist_modal.set(false);
+                        if is_selection_mode() {
+                            is_selection_mode.set(false);
+                            selected_tracks.write().clear();
+                        }
+                    },
                     on_add_to_playlist: move |playlist_id: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             let mut store = playlist_store.write();
                             if let Some(playlist) = store.playlists.iter_mut().find(|p| p.id == playlist_id) {
-                                if !playlist.tracks.contains(&path) {
-                                    playlist.tracks.push(path);
+                                for path in selected_paths {
+                                    if !playlist.tracks.contains(&path) {
+                                        playlist.tracks.push(path);
+                                    }
                                 }
                             }
                         }
                         show_playlist_modal.set(false);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     },
                     on_create_playlist: move |name: String| {
-                        if let Some(path) = selected_track_for_playlist.read().clone() {
+                        let mut selected_paths = Vec::new();
+                        if is_selection_mode() {
+                            selected_paths = selected_tracks.read().iter().cloned().collect();
+                        } else if let Some(path) = selected_track_for_playlist.read().clone() {
+                            selected_paths.push(path);
+                        }
+
+                        if !selected_paths.is_empty() {
                             let mut store = playlist_store.write();
                             store.playlists.push(reader::models::Playlist {
                                 id: uuid::Uuid::new_v4().to_string(),
                                 name,
-                                tracks: vec![path],
+                                tracks: selected_paths,
                             });
                         }
                         show_playlist_modal.set(false);
+                        is_selection_mode.set(false);
+                        selected_tracks.write().clear();
                     }
                 }
             }
