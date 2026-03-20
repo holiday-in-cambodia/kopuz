@@ -40,6 +40,8 @@ pub struct AppConfig {
     pub lastfm_token: String,
     #[serde(default)]
     pub reduce_animations: bool,
+    #[serde(default = "default_volume")]
+    pub volume: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -78,6 +80,10 @@ fn default_sort_order() -> SortOrder {
     SortOrder::Title
 }
 
+fn default_volume() -> f32 {
+    1.0
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         let music_directory = directories::UserDirs::new()
@@ -95,6 +101,7 @@ impl Default for AppConfig {
             musicbrainz_token: String::new(),
             lastfm_token: String::new(),
             reduce_animations: false,
+            volume: default_volume(),
         }
     }
 }

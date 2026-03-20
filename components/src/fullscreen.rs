@@ -8,7 +8,7 @@ use reader::Library;
 #[component]
 pub fn Fullscreen(
     library: Signal<Library>,
-    player: Signal<Player>,
+    mut player: Signal<Player>,
     mut is_playing: Signal<bool>,
     mut is_fullscreen: Signal<bool>,
     mut current_song_duration: Signal<u64>,
@@ -57,7 +57,7 @@ pub fn Fullscreen(
         ctrl.play_track(index);
     };
 
-    let config = use_context::<Signal<AppConfig>>();
+    let mut config = use_context::<Signal<AppConfig>>();
 
     let lyrics = use_resource(move || {
         let title = current_song_title.read().clone();
@@ -321,8 +321,9 @@ pub fn Fullscreen(
                             class: "absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer",
                             oninput: move |evt| {
                                 if let Ok(val) = evt.value().parse::<f32>() {
-                                    player.read().set_volume(val);
+                                    player.write().set_volume(val);
                                     volume.set(val);
+                                    config.write().volume = val;
                                 }
                             }
                         }

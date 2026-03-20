@@ -16,6 +16,7 @@ pub struct Player {
     sink: Sink,
     start_time: Option<Instant>,
     elapsed: Duration,
+    volume: f32,
 
     now_playing: Option<NowPlayingMeta>,
 }
@@ -30,12 +31,14 @@ impl Player {
             sink,
             start_time: None,
             elapsed: Duration::from_secs(0),
+            volume: 1.0,
             now_playing: None,
         }
     }
 
     pub fn play(&mut self, source: impl Source<Item = f32> + Send + 'static, meta: NowPlayingMeta) {
         let new_sink = Sink::connect_new(self.stream.mixer());
+        new_sink.set_volume(self.volume);
         new_sink.append(source);
         new_sink.play();
 
@@ -94,7 +97,8 @@ impl Player {
         self.now_playing = None;
     }
 
-    pub fn set_volume(&self, volume: f32) {
+    pub fn set_volume(&mut self, volume: f32) {
+        self.volume = volume;
         self.sink.set_volume(volume);
     }
 

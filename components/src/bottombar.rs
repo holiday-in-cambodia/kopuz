@@ -7,8 +7,8 @@ use reader::{FavoritesStore, Library};
 pub fn Bottombar(
     library: Signal<Library>,
     favorites_store: Signal<FavoritesStore>,
-    config: Signal<config::AppConfig>,
-    player: Signal<Player>,
+    mut config: Signal<config::AppConfig>,
+    mut player: Signal<Player>,
     mut is_playing: Signal<bool>,
     mut is_fullscreen: Signal<bool>,
     mut current_song_duration: Signal<u64>,
@@ -37,7 +37,6 @@ pub fn Bottombar(
 
     let mut ctrl = use_context::<PlayerController>();
 
-    // Determine if the currently-playing track is a favourite
     let is_favorite = {
         let q = queue.read();
         let idx = *current_queue_index.read();
@@ -114,10 +113,8 @@ pub fn Bottombar(
                                     let currently_fav = favorites_store.read().is_jellyfin_favorite(&item_id);
                                     let new_fav = !currently_fav;
 
-                                    // Optimistically update local store
                                     favorites_store.write().set_jellyfin(item_id.clone(), new_fav);
 
-                                    // Sync to server in background
                                     spawn(async move {
                                         let (server_config, device_id) = {
                                             let conf = config.peek();
@@ -155,14 +152,12 @@ pub fn Bottombar(
                                             };
                                             if let Err(e) = result {
                                                 eprintln!("Failed to sync favorite to Jellyfin: {e}");
-                                                // Revert the optimistic update on failure
                                                 favorites_store.write().set_jellyfin(item_id, !new_fav);
                                             }
                                         }
                                     });
                                 }
                             } else {
-                                // Local track — just toggle in store
                                 favorites_store.write().toggle_local(track.path.clone());
                             }
                         }
@@ -277,8 +272,9 @@ pub fn Bottombar(
                             class: "absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-10",
                             oninput: move |evt| {
                                 if let Ok(val) = evt.value().parse::<f32>() {
-                                    player.read().set_volume(val);
+                                    player.write().set_volume(val);
                                     volume.set(val);
+                                    config.write().volume = val;
                                 }
                             }
                         }

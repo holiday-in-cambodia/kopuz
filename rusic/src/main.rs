@@ -162,7 +162,7 @@ fn App() -> Element {
     let _ = std::fs::create_dir_all(cover_cache());
     let mut trigger_rescan = use_signal(|| 0);
     let current_playing = use_signal(|| 0);
-    let player = use_signal(Player::new);
+    let mut player = use_signal(Player::new);
     let current_song_cover_url = use_signal(String::new);
     let current_song_title = use_signal(String::new);
     let current_song_artist = use_signal(String::new);
@@ -171,7 +171,7 @@ fn App() -> Element {
     let current_song_khz = use_signal(|| 0u32);
     let current_song_bitrate = use_signal(|| 0u8);
     let current_song_progress = use_signal(|| 0u64);
-    let volume = use_signal(|| 1.0f32);
+    let mut volume = use_signal(|| 1.0f32);
 
     let is_playing = use_signal(|| false);
     let is_fullscreen = use_signal(|| false);
@@ -266,7 +266,9 @@ fn App() -> Element {
                 library.set(loaded);
             }
             if let Ok(loaded) = cfg_res {
-                config.set(loaded);
+                config.set(loaded.clone());
+                volume.set(loaded.volume);
+                player.write().set_volume(loaded.volume);
             }
             if let Ok(Ok(loaded)) = pl_res {
                 playlist_store.set(loaded);

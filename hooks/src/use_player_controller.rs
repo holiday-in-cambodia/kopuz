@@ -123,7 +123,7 @@ impl PlayerController {
                                 };
 
                                 player.write().play(source, meta);
-                                player.read().set_volume(*volume.peek());
+                                player.write().set_volume(*volume.peek());
                                 is_loading.set(false);
                                 is_playing.set(true);
                                 skip_in_progress.set(false);
@@ -266,7 +266,7 @@ impl PlayerController {
                         };
 
                         self.player.write().play(source, meta);
-                        self.player.read().set_volume(*self.volume.peek());
+                        self.player.write().set_volume(*self.volume.peek());
 
                         self.skip_in_progress.set(false);
 
