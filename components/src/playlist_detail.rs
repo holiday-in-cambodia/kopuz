@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use config::MusicService;
+use dioxus::prelude::*;
 use player::player;
 use reader::{Library, PlaylistStore};
 use std::collections::HashSet;
@@ -98,7 +98,9 @@ pub fn PlaylistDetail(
                                             let artist_str = item
                                                 .album_artist
                                                 .clone()
-                                                .or_else(|| item.artists.as_ref().map(|a| a.join(", ")))
+                                                .or_else(|| {
+                                                    item.artists.as_ref().map(|a| a.join(", "))
+                                                })
                                                 .unwrap_or_default();
                                             new_tracks.push(reader::models::Track {
                                                 path: PathBuf::from(path_str),
@@ -128,15 +130,21 @@ pub fn PlaylistDetail(
                                         user_id,
                                         token,
                                     );
-                                    if let Ok(items) = remote.get_playlist_entries(&pid_clone).await {
+                                    if let Ok(items) = remote.get_playlist_entries(&pid_clone).await
+                                    {
                                         let mut new_tracks = Vec::new();
-                                        for (index, item) in items.into_iter().enumerate() {
+                                        for item in items.into_iter() {
                                             let cover_tag = item
                                                 .cover_art
                                                 .as_ref()
-                                                .map(|cover_art_id| remote.cover_art_url(cover_art_id, Some(512)))
+                                                .and_then(|cover_art_id| {
+                                                    remote
+                                                        .cover_art_url(cover_art_id, Some(512))
+                                                        .ok()
+                                                })
                                                 .map(|url| {
-                                                    let mut hex = String::with_capacity(url.len() * 2);
+                                                    let mut hex =
+                                                        String::with_capacity(url.len() * 2);
                                                     for b in url.as_bytes() {
                                                         hex.push_str(&format!("{:02x}", b));
                                                     }
@@ -144,7 +152,10 @@ pub fn PlaylistDetail(
                                                 });
 
                                             let path = if let Some(tag) = &cover_tag {
-                                                PathBuf::from(format!("jellyfin:{}:{}", item.id, tag))
+                                                PathBuf::from(format!(
+                                                    "jellyfin:{}:{}",
+                                                    item.id, tag
+                                                ))
                                             } else {
                                                 PathBuf::from(format!("jellyfin:{}", item.id))
                                             };
@@ -159,7 +170,9 @@ pub fn PlaylistDetail(
                                                         format!("jellyfin:{}:none", id)
                                                     }
                                                 })
-                                                .unwrap_or_else(|| format!("jellyfin:{}:none", item.id));
+                                                .unwrap_or_else(|| {
+                                                    format!("jellyfin:{}:none", item.id)
+                                                });
 
                                             new_tracks.push(reader::models::Track {
                                                 path,
@@ -173,7 +186,7 @@ pub fn PlaylistDetail(
                                                 track_number: item.track,
                                                 disc_number: item.disc_number,
                                                 musicbrainz_release_id: None,
-                                                playlist_item_id: Some(index.to_string()),
+                                                playlist_item_id: None,
                                             });
                                         }
                                         tracks.set(new_tracks);
@@ -332,27 +345,35 @@ pub fn PlaylistDetail(
                             } else {
                                 let pid_clone = pid.clone();
                                 let entry_id_opt = t.playlist_item_id.clone();
+                                let remove_idx = idx;
                                 spawn(async move {
-                                    if let Some(entry_id) = entry_id_opt {
-                                        let conf = config.peek();
-                                        if let Some(server) = &conf.server {
-                                            if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
-                                                match server.service {
-                                                    MusicService::Jellyfin => {
+                                    let conf = config.peek();
+                                    if let Some(server) = &conf.server {
+                                        if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
+                                            let removed = match server.service {
+                                                MusicService::Jellyfin => {
+                                                    if let Some(entry_id) = entry_id_opt {
                                                         let remote = server::jellyfin::JellyfinClient::new(
                                                             &server.url,
                                                             Some(token),
                                                             &conf.device_id,
                                                             Some(user_id),
                                                         );
-                                                        let _ = remote.remove_from_playlist(&pid_clone, &entry_id).await;
+                                                        remote.remove_from_playlist(&pid_clone, &entry_id).await.is_ok()
+                                                    } else {
+                                                        false
                                                     }
-                                                    MusicService::Subsonic | MusicService::Custom => {
-                                                        if let Ok(song_index) = entry_id.parse::<usize>() {
-                                                            let remote = server::subsonic::SubsonicClient::new(&server.url, user_id, token);
-                                                            let _ = remote.remove_from_playlist(&pid_clone, song_index).await;
-                                                        }
-                                                    }
+                                                }
+                                                MusicService::Subsonic | MusicService::Custom => {
+                                                    let remote = server::subsonic::SubsonicClient::new(&server.url, user_id, token);
+                                                    remote.remove_from_playlist(&pid_clone, remove_idx).await.is_ok()
+                                                }
+                                            };
+
+                                            if removed {
+                                                let mut tracks_write = tracks.write();
+                                                if remove_idx < tracks_write.len() {
+                                                    tracks_write.remove(remove_idx);
                                                 }
                                             }
                                         }

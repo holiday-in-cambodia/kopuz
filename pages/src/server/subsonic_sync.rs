@@ -2,8 +2,8 @@ use ::server::jellyfin::JellyfinClient;
 use ::server::subsonic::SubsonicClient;
 use config::{AppConfig, MusicService};
 use dioxus::prelude::*;
-use reader::models::{Album, Track};
 use reader::Library;
+use reader::models::{Album, Track};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -40,142 +40,133 @@ pub async fn sync_server_library(
 
     let (service, server_url, token, user_id, device_id) = snapshot;
 
-    if clear_first {
-        let mut lib_write = library.write();
-        lib_write.jellyfin_tracks.clear();
-        lib_write.jellyfin_albums.clear();
-        lib_write.jellyfin_genres.clear();
-    }
-
     match service {
         MusicService::Jellyfin => {
             let remote = JellyfinClient::new(&server_url, Some(&token), &device_id, Some(&user_id));
             let mut out_albums = Vec::new();
             let mut out_tracks = Vec::new();
             let mut out_genres = Vec::new();
+            let libs = remote.get_music_libraries().await?;
+            for lib in libs {
+                let mut album_start_index = 0;
+                let album_limit = 500;
+                loop {
+                    let (albums, _total) = remote
+                        .get_albums_paginated(&lib.id, album_start_index, album_limit)
+                        .await?;
 
-            if let Ok(libs) = remote.get_music_libraries().await {
-                for lib in libs {
-                    let mut album_start_index = 0;
-                    let album_limit = 500;
-                    loop {
-                        match remote
-                            .get_albums_paginated(&lib.id, album_start_index, album_limit)
-                            .await
-                        {
-                            Ok((albums, _total)) => {
-                                if albums.is_empty() {
-                                    break;
-                                }
-                                let count = albums.len();
+                    if albums.is_empty() {
+                        break;
+                    }
+                    let count = albums.len();
 
-                                for album_item in albums {
-                                    let image_tag = album_item
-                                        .image_tags
-                                        .as_ref()
-                                        .and_then(|t| t.get("Primary").cloned());
+                    for album_item in albums {
+                        let image_tag = album_item
+                            .image_tags
+                            .as_ref()
+                            .and_then(|t| t.get("Primary").cloned());
 
-                                    let cover_path = if let Some(tag) = image_tag {
-                                        Some(PathBuf::from(format!("jellyfin:{}:{}", album_item.id, tag)))
-                                    } else {
-                                        Some(PathBuf::from(format!("jellyfin:{}", album_item.id)))
-                                    };
+                        let cover_path = if let Some(tag) = image_tag {
+                            Some(PathBuf::from(format!("jellyfin:{}:{}", album_item.id, tag)))
+                        } else {
+                            Some(PathBuf::from(format!("jellyfin:{}", album_item.id)))
+                        };
 
-                                    out_albums.push(Album {
-                                        id: format!("jellyfin:{}", album_item.id),
-                                        title: album_item.name,
-                                        artist: album_item
-                                            .album_artist
-                                            .or_else(|| album_item.artists.as_ref().map(|a| a.join(", ")))
-                                            .unwrap_or_default(),
-                                        genre: album_item
-                                            .genres
-                                            .as_ref()
-                                            .map(|g| g.join(", "))
-                                            .unwrap_or_default(),
-                                        year: album_item.production_year.unwrap_or(0),
-                                        cover_path,
-                                    });
-                                }
-
-                                album_start_index += count;
-                                if count < album_limit {
-                                    break;
-                                }
-                            }
-                            Err(_) => break,
-                        }
+                        out_albums.push(Album {
+                            id: format!("jellyfin:{}", album_item.id),
+                            title: album_item.name,
+                            artist: album_item
+                                .album_artist
+                                .or_else(|| album_item.artists.as_ref().map(|a| a.join(", ")))
+                                .unwrap_or_default(),
+                            genre: album_item
+                                .genres
+                                .as_ref()
+                                .map(|g| g.join(", "))
+                                .unwrap_or_default(),
+                            year: album_item.production_year.unwrap_or(0),
+                            cover_path,
+                        });
                     }
 
-                    let mut start_index = 0;
-                    let limit = 500;
-                    loop {
-                        match remote
-                            .get_music_library_items_paginated(&lib.id, start_index, limit)
-                            .await
-                        {
-                            Ok(items) => {
-                                if items.is_empty() {
-                                    break;
-                                }
-                                let count = items.len();
-
-                                for item in items {
-                                    let mut path_str = format!("jellyfin:{}", item.id);
-                                    if let Some(tags) = &item.image_tags {
-                                        if let Some(tag) = tags.get("Primary") {
-                                            path_str.push_str(&format!(":{}", tag));
-                                        }
-                                    }
-
-                                    let bitrate_kbps = item.bitrate.unwrap_or(0) / 1000;
-                                    let bitrate_u8 = bitrate_kbps.min(255) as u8;
-
-                                    out_tracks.push(Track {
-                                        path: PathBuf::from(path_str),
-                                        album_id: item
-                                            .album_id
-                                            .map(|id| format!("jellyfin:{}", id))
-                                            .unwrap_or_default(),
-                                        title: item.name,
-                                        artist: item
-                                            .album_artist
-                                            .or_else(|| item.artists.map(|a| a.join(", ")))
-                                            .unwrap_or_default(),
-                                        album: item.album.unwrap_or_default(),
-                                        duration: item.run_time_ticks.unwrap_or(0) / 10_000_000,
-                                        khz: item.sample_rate.unwrap_or(0),
-                                        bitrate: bitrate_u8,
-                                        track_number: item.index_number,
-                                        disc_number: item.parent_index_number,
-                                        musicbrainz_release_id: None,
-                                        playlist_item_id: None,
-                                    });
-                                }
-
-                                start_index += count;
-                                if count < limit {
-                                    break;
-                                }
-                            }
-                            Err(_) => break,
-                        }
-                    }
-
-                    if let Ok(genres) = remote.get_genres().await {
-                        out_genres = genres.into_iter().map(|g| (g.name, g.id)).collect();
+                    album_start_index += count;
+                    if count < album_limit {
+                        break;
                     }
                 }
+
+                let mut start_index = 0;
+                let limit = 500;
+                loop {
+                    let items = remote
+                        .get_music_library_items_paginated(&lib.id, start_index, limit)
+                        .await?;
+
+                    if items.is_empty() {
+                        break;
+                    }
+                    let count = items.len();
+
+                    for item in items {
+                        let mut path_str = format!("jellyfin:{}", item.id);
+                        if let Some(tags) = &item.image_tags {
+                            if let Some(tag) = tags.get("Primary") {
+                                path_str.push_str(&format!(":{}", tag));
+                            }
+                        }
+
+                        let bitrate_kbps = item.bitrate.unwrap_or(0) / 1000;
+                        let bitrate_u8 = bitrate_kbps.min(255) as u8;
+
+                        out_tracks.push(Track {
+                            path: PathBuf::from(path_str),
+                            album_id: item
+                                .album_id
+                                .map(|id| format!("jellyfin:{}", id))
+                                .unwrap_or_default(),
+                            title: item.name,
+                            artist: item
+                                .album_artist
+                                .or_else(|| item.artists.map(|a| a.join(", ")))
+                                .unwrap_or_default(),
+                            album: item.album.unwrap_or_default(),
+                            duration: item.run_time_ticks.unwrap_or(0) / 10_000_000,
+                            khz: item.sample_rate.unwrap_or(0),
+                            bitrate: bitrate_u8,
+                            track_number: item.index_number,
+                            disc_number: item.parent_index_number,
+                            musicbrainz_release_id: None,
+                            playlist_item_id: None,
+                        });
+                    }
+
+                    start_index += count;
+                    if count < limit {
+                        break;
+                    }
+                }
+
+                let genres = remote.get_genres().await?;
+                out_genres = genres.into_iter().map(|g| (g.name, g.id)).collect();
             }
 
             let mut lib_write = library.write();
+            if clear_first {
+                lib_write.jellyfin_tracks.clear();
+                lib_write.jellyfin_albums.clear();
+                lib_write.jellyfin_genres.clear();
+            }
             for album in out_albums {
                 if !lib_write.jellyfin_albums.iter().any(|a| a.id == album.id) {
                     lib_write.jellyfin_albums.push(album);
                 }
             }
             for track in out_tracks {
-                if !lib_write.jellyfin_tracks.iter().any(|t| t.path == track.path) {
+                if !lib_write
+                    .jellyfin_tracks
+                    .iter()
+                    .any(|t| t.path == track.path)
+                {
                     lib_write.jellyfin_tracks.push(track);
                 }
             }
@@ -222,7 +213,7 @@ pub async fn fetch_subsonic_library(
             let album_cover_tag = album
                 .cover_art
                 .as_ref()
-                .map(|cover_art_id| remote.cover_art_url(cover_art_id, Some(512)))
+                .and_then(|cover_art_id| remote.cover_art_url(cover_art_id, Some(512)).ok())
                 .map(|url| encode_cover_url_tag(&url));
 
             let album_id_prefixed = if let Some(tag) = &album_cover_tag {
@@ -264,7 +255,7 @@ pub async fn fetch_subsonic_library(
                     let song_cover_tag = song
                         .cover_art
                         .as_ref()
-                        .map(|cover_art_id| remote.cover_art_url(cover_art_id, Some(512)))
+                        .and_then(|cover_art_id| remote.cover_art_url(cover_art_id, Some(512)).ok())
                         .map(|url| encode_cover_url_tag(&url));
 
                     let song_path = if let Some(tag) = &song_cover_tag {

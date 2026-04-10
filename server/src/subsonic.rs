@@ -1,3 +1,4 @@
+use rand::{Rng, distributions::Alphanumeric};
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
@@ -160,7 +161,7 @@ impl SubsonicClient {
             http_client,
             base_url: base_url.trim_end_matches('/').to_string(),
             username: username.to_string(),
-            password: password.to_string(),
+            password: crate::provider::resolve_subsonic_secret(password),
         }
     }
 
@@ -285,9 +286,9 @@ impl SubsonicClient {
             .map(|_| ())
     }
 
-    pub fn stream_url(&self, item_id: &str) -> String {
+    pub fn stream_url(&self, item_id: &str) -> Result<String, String> {
         let mut url = reqwest::Url::parse(&format!("{}/rest/stream.view", self.base_url))
-            .unwrap_or_else(|_| reqwest::Url::parse("http://127.0.0.1/").unwrap());
+            .map_err(|e| format!("Invalid Subsonic base URL '{}': {}", self.base_url, e))?;
         {
             let mut pairs = url.query_pairs_mut();
             for (k, v) in self.auth_params() {
@@ -295,12 +296,12 @@ impl SubsonicClient {
             }
             pairs.append_pair("id", item_id);
         }
-        url.to_string()
+        Ok(url.to_string())
     }
 
-    pub fn cover_art_url(&self, cover_art_id: &str, max_size: Option<u32>) -> String {
+    pub fn cover_art_url(&self, cover_art_id: &str, max_size: Option<u32>) -> Result<String, String> {
         let mut url = reqwest::Url::parse(&format!("{}/rest/getCoverArt.view", self.base_url))
-            .unwrap_or_else(|_| reqwest::Url::parse("http://127.0.0.1/").unwrap());
+            .map_err(|e| format!("Invalid Subsonic base URL '{}': {}", self.base_url, e))?;
         {
             let mut pairs = url.query_pairs_mut();
             for (k, v) in self.auth_params() {
@@ -311,17 +312,30 @@ impl SubsonicClient {
                 pairs.append_pair("size", &size.to_string());
             }
         }
-        url.to_string()
+        Ok(url.to_string())
     }
 
     fn auth_params(&self) -> Vec<(String, String)> {
+        let salt = self.random_salt();
+        let token_input = format!("{}{}", self.password, salt);
+        let token = format!("{:x}", md5::compute(token_input));
+
         vec![
             ("u".to_string(), self.username.clone()),
-            ("p".to_string(), format!("enc:{}", to_hex(&self.password))),
+            ("t".to_string(), token),
+            ("s".to_string(), salt),
             ("v".to_string(), SUBSONIC_API_VERSION.to_string()),
             ("c".to_string(), CLIENT_NAME.to_string()),
             ("f".to_string(), "json".to_string()),
         ]
+    }
+
+    fn random_salt(&self) -> String {
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(16)
+            .map(char::from)
+            .collect()
     }
 
     async fn call<T: DeserializeOwned + Default>(
@@ -361,12 +375,4 @@ impl SubsonicClient {
 
         Err("Subsonic request failed with unknown error".to_string())
     }
-}
-
-fn to_hex(input: &str) -> String {
-    let mut out = String::with_capacity(input.len() * 2);
-    for byte in input.as_bytes() {
-        out.push_str(&format!("{:02x}", byte));
-    }
-    out
 }

@@ -1,4 +1,6 @@
 use ::server::jellyfin::JellyfinClient;
+use ::server::subsonic::SubsonicClient;
+use config::MusicService;
 use config::AppConfig;
 use dioxus::prelude::*;
 use rand::seq::SliceRandom;
@@ -227,21 +229,44 @@ pub fn JellyfinHome(
                                                         if parts.len() >= 2 { Some(parts[1].to_string()) } else { None }
                                                     }).collect();
                                                     spawn(async move {
-                                                        let (server_config, device_id) = {
+                                                        let server_config = {
                                                             let conf = config.peek();
                                                             if let Some(server) = &conf.server {
                                                                 if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
-                                                                    (Some((server.url.clone(), token.clone(), user_id.clone())), conf.device_id.clone())
-                                                                } else { (None, conf.device_id.clone()) }
-                                                            } else { (None, conf.device_id.clone()) }
+                                                                    Some((
+                                                                        server.service,
+                                                                        server.url.clone(),
+                                                                        token.clone(),
+                                                                        user_id.clone(),
+                                                                        conf.device_id.clone(),
+                                                                    ))
+                                                                } else { None }
+                                                            } else { None }
                                                         };
-                                                        if let Some((url, token, user_id)) = server_config {
-                                                            let remote = JellyfinClient::new(&url, Some(&token), &device_id, Some(&user_id));
+                                                        if let Some((service, url, token, user_id, device_id)) = server_config {
                                                             for id in &track_ids {
-                                                                let result = if new_fav {
-                                                                    remote.mark_favorite(id).await
-                                                                } else {
-                                                                    remote.unmark_favorite(id).await
+                                                                let result = match service {
+                                                                    MusicService::Jellyfin => {
+                                                                        let remote = JellyfinClient::new(
+                                                                            &url,
+                                                                            Some(&token),
+                                                                            &device_id,
+                                                                            Some(&user_id),
+                                                                        );
+                                                                        if new_fav {
+                                                                            remote.mark_favorite(id).await
+                                                                        } else {
+                                                                            remote.unmark_favorite(id).await
+                                                                        }
+                                                                    }
+                                                                    MusicService::Subsonic | MusicService::Custom => {
+                                                                        let remote = SubsonicClient::new(&url, &user_id, &token);
+                                                                        if new_fav {
+                                                                            remote.star(id).await
+                                                                        } else {
+                                                                            remote.unstar(id).await
+                                                                        }
+                                                                    }
                                                                 };
                                                                 if let Err(e) = result {
                                                                     eprintln!("Failed to sync favorite: {e}");

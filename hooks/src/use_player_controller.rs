@@ -106,7 +106,7 @@ impl PlayerController {
                                     username,
                                     password,
                                 );
-                                remote.stream_url(&id)
+                                remote.stream_url(&id).unwrap_or_default()
                             } else {
                                 String::new()
                             };

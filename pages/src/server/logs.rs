@@ -1,4 +1,4 @@
-use config::AppConfig;
+use config::{AppConfig, MusicService};
 use dioxus::prelude::*;
 use hooks::use_player_controller::PlayerController;
 use reader::Library;
@@ -164,4 +164,16 @@ pub fn JellyfinLogs(library: Signal<Library>, config: Signal<AppConfig>) -> Elem
     }
 }
 
-pub use JellyfinLogs as ServerLogs;
+#[component]
+pub fn ServerLogs(library: Signal<Library>, config: Signal<AppConfig>) -> Element {
+    let service = config
+        .read()
+        .active_service()
+        .unwrap_or(MusicService::Jellyfin);
+
+    match service {
+        MusicService::Jellyfin | MusicService::Subsonic | MusicService::Custom => rsx! {
+            JellyfinLogs { library, config }
+        },
+    }
+}

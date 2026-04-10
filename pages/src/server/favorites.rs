@@ -1,3 +1,5 @@
+use ::server::jellyfin::JellyfinClient;
+use ::server::subsonic::SubsonicClient;
 use components::playlist_modal::PlaylistModal;
 use components::selection_bar::SelectionBar;
 use components::track_row::TrackRow;
@@ -5,8 +7,6 @@ use config::{AppConfig, MusicService};
 use dioxus::prelude::*;
 use hooks::use_player_controller::PlayerController;
 use reader::{FavoritesStore, Library, PlaylistStore};
-use ::server::jellyfin::JellyfinClient;
-use ::server::subsonic::SubsonicClient;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -74,10 +74,8 @@ pub fn JellyfinFavorites(
                         }
                     };
 
-                    if !ids.is_empty() {
-                        let mut store = favorites_store.write();
-                        store.jellyfin_favorites = ids;
-                    }
+                    let mut store = favorites_store.write();
+                    store.jellyfin_favorites = ids;
                 }
                 is_syncing.set(false);
             });

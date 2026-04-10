@@ -24,7 +24,6 @@ pub fn Album(
     mut current_queue_index: Signal<usize>,
 ) -> Element {
     let is_server = config.read().active_source == MusicSource::Server;
-    let is_jellyfin = config.read().uses_jellyfin_server();
 
     let open_album_menu = use_signal(|| None::<String>);
     let mut show_album_playlist_modal = use_signal(|| false);
@@ -40,7 +39,7 @@ pub fn Album(
     };
 
     use_effect(move || {
-        if is_jellyfin && !*has_fetched_jellyfin.read() {
+        if is_server && !*has_fetched_jellyfin.read() {
             if library.read().jellyfin_tracks.is_empty()
                 || library.read().jellyfin_albums.is_empty()
             {
@@ -85,12 +84,12 @@ pub fn Album(
                     if *show_album_playlist_modal.read() {
                         components::playlist_modal::PlaylistModal {
                             playlist_store,
-                            is_jellyfin,
+                            is_jellyfin: is_server,
                             on_close: move |_| show_album_playlist_modal.set(false),
                             on_add_to_playlist: move |playlist_id: String| {
                                 if let Some(aid) = pending_album_id_for_playlist.read().clone() {
                                     let lib = library.read();
-                                    let tracks: Vec<_> = if is_jellyfin {
+                                    let tracks: Vec<_> = if is_server {
                                         lib.jellyfin_tracks.iter()
                                             .filter(|t| t.album_id == aid)
                                             .map(|t| t.path.clone())
@@ -122,7 +121,7 @@ pub fn Album(
                             on_create_playlist: move |name: String| {
                                 if let Some(aid) = pending_album_id_for_playlist.read().clone() {
                                     let lib = library.read();
-                                    let tracks: Vec<_> = if is_jellyfin {
+                                    let tracks: Vec<_> = if is_server {
                                         lib.jellyfin_tracks.iter()
                                             .filter(|t| t.album_id == aid)
                                             .map(|t| t.path.clone())

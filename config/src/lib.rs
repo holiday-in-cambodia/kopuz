@@ -155,15 +155,15 @@ impl Default for MusicServer {
 
 impl AppConfig {
     pub fn active_service(&self) -> Option<MusicService> {
-        self.server.as_ref().map(|server| server.service)
+        if self.active_source.is_server() {
+            self.server.as_ref().map(|server| server.service)
+        } else {
+            None
+        }
     }
 
     pub fn uses_jellyfin_server(&self) -> bool {
-        self.active_source.is_server()
-            && matches!(
-                self.active_service().unwrap_or(MusicService::Jellyfin),
-                MusicService::Jellyfin
-            )
+        self.active_service() == Some(MusicService::Jellyfin)
     }
 
     pub fn load(path: &Path) -> Self {

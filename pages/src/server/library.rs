@@ -53,8 +53,10 @@ pub fn JellyfinLibrary(
             if *fetch_generation.read() == current_gen {
                 let _ =
                     crate::server::subsonic_sync::sync_server_library(library, config, true).await;
+                if *fetch_generation.read() == current_gen {
+                    is_loading.set(false);
+                }
             }
-            is_loading.set(false);
         });
     };
 
