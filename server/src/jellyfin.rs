@@ -1,7 +1,8 @@
 use jellyfin_sdk_rust::JellyfinSDK;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-const APP_VERSION: &str = "0.3.3";
+const APP_VERSION: &str = "0.3.6";
 
 #[derive(Serialize)]
 struct PlaybackProgressRequest<'a> {
@@ -185,6 +186,98 @@ impl JellyfinClient {
         }
     }
 
+    fn user_id(&self) -> Result<&str, String> {
+        self.user_id
+            .as_deref()
+            .ok_or_else(|| "No user ID available".to_string())
+    }
+
+    fn access_token(&self) -> Result<&str, String> {
+        self.access_token
+            .as_deref()
+            .ok_or_else(|| "No access token available".to_string())
+    }
+
+    fn build_url(&self, path: &str) -> String {
+        if path.starts_with('/') {
+            format!("{}{}", self.base_url, path)
+        } else {
+            format!("{}/{}", self.base_url, path)
+        }
+    }
+
+    fn auth_header(&self) -> Result<String, String> {
+        let token = self.access_token()?;
+        Ok(format!(
+            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            self.device_id, APP_VERSION, token
+        ))
+    }
+
+    fn authorized_request(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+    ) -> Result<reqwest::RequestBuilder, String> {
+        let auth_header = self.auth_header()?;
+        Ok(self
+            .http_client
+            .request(method, self.build_url(path))
+            .header("X-Emby-Authorization", auth_header))
+    }
+
+    async fn ensure_success(
+        resp: reqwest::Response,
+        context: &str,
+    ) -> Result<reqwest::Response, String> {
+        if resp.status().is_success() {
+            return Ok(resp);
+        }
+
+        let status = resp.status();
+        let text = resp.text().await.unwrap_or_default();
+
+        if text.is_empty() {
+            Err(format!("{}: {}", context, status))
+        } else {
+            Err(format!("{}: {} - {}", context, status, text))
+        }
+    }
+
+    async fn request<T>(&self, path: &str) -> Result<T, String>
+    where
+        T: DeserializeOwned,
+    {
+        let resp = self
+            .authorized_request(reqwest::Method::GET, path)?
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let context = format!("Request failed for {}", path);
+        let resp = Self::ensure_success(resp, &context).await?;
+
+        resp.json::<T>().await.map_err(|e| e.to_string())
+    }
+
+    async fn request_with_query<T, Q>(&self, path: &str, query: &Q) -> Result<T, String>
+    where
+        T: DeserializeOwned,
+        Q: Serialize + ?Sized,
+    {
+        let resp = self
+            .authorized_request(reqwest::Method::GET, path)?
+            .query(query)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let context = format!("Request failed for {}", path);
+        let resp = Self::ensure_success(resp, &context).await?;
+
+        resp.json::<T>().await.map_err(|e| e.to_string())
+    }
+
     pub async fn login(
         &mut self,
         username: &str,
@@ -226,65 +319,16 @@ impl JellyfinClient {
     }
 
     pub async fn get_metadata(&self, user_id: &str, item_id: &str) -> Result<Item, String> {
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!(
-            "{}/Users/{}/Items/{}/Metadata",
-            self.base_url, user_id, item_id
-        );
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
-
-        let resp = self
-            .http_client
-            .get(&url)
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get metadata: {}", resp.status()));
-        }
-
-        let metadata_resp: Item = resp.json().await.map_err(|e| e.to_string())?;
-        Ok(metadata_resp)
+        let path = format!("/Users/{}/Items/{}/Metadata", user_id, item_id);
+        self.request(&path).await
     }
 
     pub async fn get_views(&self) -> Result<Vec<ViewItem>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Users/{}/Views", self.base_url, user_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
-
-        let resp = self
-            .http_client
-            .get(&url)
-            .header("X-Emby-Authorization", auth_header)
-            .send()
+        let user_id = self.user_id()?;
+        let path = format!("/Users/{}/Views", user_id);
+        self.request::<ViewItemsResponse>(&path)
             .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get views: {}", resp.status()));
-        }
-
-        let views_resp: ViewItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
-        Ok(views_resp.items)
+            .map(|r| r.items)
     }
 
     pub async fn get_music_libraries(&self) -> Result<Vec<ViewItem>, String> {
@@ -302,82 +346,40 @@ impl JellyfinClient {
         start_index: usize,
         limit: usize,
     ) -> Result<Vec<Item>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Users/{}/Items", self.base_url, user_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
+        let user_id = self.user_id()?;
+        let path = format!("/Users/{}/Items", user_id);
 
         let start = start_index.to_string();
         let limit_val = limit.to_string();
+        let query = [
+            ("ParentId", parent_id),
+            ("Recursive", "true"),
+            ("IncludeItemTypes", "Audio"),
+            (
+                "Fields",
+                "DateCreated,DateLastMediaAdded,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container",
+            ),
+            ("StartIndex", start.as_str()),
+            ("Limit", limit_val.as_str()),
+        ];
 
-        let resp = self.http_client
-            .get(&url)
-            .query(&[
-                ("ParentId", parent_id),
-                ("Recursive", "true"),
-                ("IncludeItemTypes", "Audio"),
-                (
-                    "Fields",
-                    "DateCreated,DateLastMediaAdded,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container",
-                ),
-                ("StartIndex", start.as_str()),
-                ("Limit", limit_val.as_str()),
-            ])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get music items: {}", resp.status()));
-        }
-
-        let items_resp: ItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let items_resp: ItemsResponse = self.request_with_query(&path, &query).await?;
         Ok(items_resp.items)
     }
 
     pub async fn get_playlists(&self) -> Result<Vec<Item>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Users/{}/Items", self.base_url, user_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
+        let user_id = self.user_id()?;
+        let path = format!("/Users/{}/Items", user_id);
 
         let fields = "DateCreated,DateLastMediaAdded".to_string();
-        let resp = self
-            .http_client
-            .get(&url)
-            .query(&[
-                ("IncludeItemTypes", "Playlist"),
-                ("Recursive", "true"),
-                ("Fields", &fields),
-                ("MediaTypes", "Audio"),
-            ])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
+        let query = [
+            ("IncludeItemTypes", "Playlist"),
+            ("Recursive", "true"),
+            ("Fields", fields.as_str()),
+            ("MediaTypes", "Audio"),
+        ];
 
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get playlists: {}", resp.status()));
-        }
-
-        let items_resp: ItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let items_resp: ItemsResponse = self.request_with_query(&path, &query).await?;
         Ok(items_resp.items)
     }
 
@@ -453,34 +455,12 @@ impl JellyfinClient {
     }
 
     pub async fn get_playlist_items(&self, playlist_id: &str) -> Result<Vec<Item>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Playlists/{}/Items", self.base_url, playlist_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
+        let user_id = self.user_id()?;
+        let path = format!("/Playlists/{}/Items", playlist_id);
 
         let fields = "DateCreated,DateLastMediaAdded,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container,PlaylistItemId".to_string();
-        let resp = self
-            .http_client
-            .get(&url)
-            .query(&[("UserId", user_id), ("Fields", &fields)])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get playlist items: {}", resp.status()));
-        }
-
-        let items_resp: ItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let query = [("UserId", user_id), ("Fields", fields.as_str())];
+        let items_resp: ItemsResponse = self.request_with_query(&path, &query).await?;
         Ok(items_resp.items)
     }
 
@@ -521,37 +501,14 @@ impl JellyfinClient {
     }
 
     pub async fn get_genres(&self) -> Result<Vec<Genre>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
+        let user_id = self.user_id()?;
+        let query = [
+            ("UserId", user_id),
+            ("Recursive", "true"),
+            ("IncludeItemTypes", "Audio"),
+        ];
 
-        let url = format!("{}/Genres", self.base_url);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
-
-        let resp = self
-            .http_client
-            .get(&url)
-            .query(&[
-                ("UserId", user_id.as_str()),
-                ("Recursive", "true"),
-                ("IncludeItemTypes", "Audio"),
-            ])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get genres: {}", resp.status()));
-        }
-
-        let genres_resp: GenresResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let genres_resp: GenresResponse = self.request_with_query("/Genres", &query).await?;
         Ok(genres_resp.items)
     }
 
@@ -561,48 +518,26 @@ impl JellyfinClient {
         start_index: usize,
         limit: usize,
     ) -> Result<(Vec<AlbumItem>, u32), String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Users/{}/Items", self.base_url, user_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
+        let user_id = self.user_id()?;
+        let path = format!("/Users/{}/Items", user_id);
 
         let start = start_index.to_string();
         let limit_val = limit.to_string();
+        let query = [
+            ("ParentId", parent_id),
+            ("Recursive", "true"),
+            ("IncludeItemTypes", "MusicAlbum"),
+            (
+                "Fields",
+                "ImageTags,Genres,ProductionYear,AlbumArtist,ChildCount",
+            ),
+            ("SortBy", "SortName"),
+            ("SortOrder", "Ascending"),
+            ("StartIndex", start.as_str()),
+            ("Limit", limit_val.as_str()),
+        ];
 
-        let resp = self
-            .http_client
-            .get(&url)
-            .query(&[
-                ("ParentId", parent_id),
-                ("Recursive", "true"),
-                ("IncludeItemTypes", "MusicAlbum"),
-                (
-                    "Fields",
-                    "ImageTags,Genres,ProductionYear,AlbumArtist,ChildCount",
-                ),
-                ("SortBy", "SortName"),
-                ("SortOrder", "Ascending"),
-                ("StartIndex", start.as_str()),
-                ("Limit", limit_val.as_str()),
-            ])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get albums: {}", resp.status()));
-        }
-
-        let albums_resp: AlbumsResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let albums_resp: AlbumsResponse = self.request_with_query(&path, &query).await?;
         Ok((albums_resp.items, albums_resp.total_record_count))
     }
 
@@ -819,40 +754,18 @@ impl JellyfinClient {
     }
 
     pub async fn get_favorite_items(&self) -> Result<Vec<Item>, String> {
-        let user_id = self.user_id.as_ref().ok_or("No user ID available")?;
-        let token = self
-            .access_token
-            .as_ref()
-            .ok_or("No access token available")?;
-
-        let url = format!("{}/Users/{}/Items", self.base_url, user_id);
-
-        let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
-            self.device_id, APP_VERSION, token
-        );
+        let user_id = self.user_id()?;
+        let path = format!("/Users/{}/Items", user_id);
 
         let fields = "DateCreated,MediaSources,ImageTags,Genres,ParentIndexNumber,IndexNumber,AlbumId,AlbumArtist,ProductionYear,Container".to_string();
+        let query = [
+            ("Filters", "IsFavorite"),
+            ("IncludeItemTypes", "Audio"),
+            ("Recursive", "true"),
+            ("Fields", fields.as_str()),
+        ];
 
-        let resp = self
-            .http_client
-            .get(&url)
-            .query(&[
-                ("Filters", "IsFavorite"),
-                ("IncludeItemTypes", "Audio"),
-                ("Recursive", "true"),
-                ("Fields", &fields),
-            ])
-            .header("X-Emby-Authorization", auth_header)
-            .send()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        if !resp.status().is_success() {
-            return Err(format!("Failed to get favorite items: {}", resp.status()));
-        }
-
-        let items_resp: ItemsResponse = resp.json().await.map_err(|e| e.to_string())?;
+        let items_resp: ItemsResponse = self.request_with_query(&path, &query).await?;
         Ok(items_resp.items)
     }
 }

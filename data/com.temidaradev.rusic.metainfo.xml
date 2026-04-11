@@ -4,7 +4,7 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>Rusic</name>
-  <summary>A modern, lightweight music player</summary>
+  <summary>A modern, gud music player</summary>
 
   <developer id="com.temidaradev">
     <name>temidaradev</name>
@@ -38,6 +38,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="0.3.6" date="2026-03-21">
+        <description>
+            <p>Technical improvements and better linux performance</p>
+        </description>
+    </release>
     <release version="0.3.5" date="2026-03-21">
         <description>
             <p>Updated whole app, now it works better.</p>
