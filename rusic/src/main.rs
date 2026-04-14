@@ -1,5 +1,6 @@
 use components::{
     bottombar::Bottombar, fullscreen::Fullscreen, rightbar::Rightbar, sidebar::Sidebar,
+    titlebar::Titlebar,
 };
 use dioxus::desktop::tao::dpi::LogicalSize;
 #[cfg(target_os = "macos")]
@@ -50,6 +51,12 @@ fn main() {
             .with_titlebar_transparent(true)
             .with_fullsize_content_view(true);
     }
+
+    #[cfg(target_os = "linux")]
+    {
+        window = window.with_decorations(false);
+    }
+
 
     let config = dioxus::desktop::Config::new()
         .with_window(window)
@@ -438,6 +445,9 @@ fn App() -> Element {
                     ctrl.toggle();
                 }
             },
+            if cfg!(target_os = "linux") {
+                Titlebar {}
+            }
             div {
                 class: "flex flex-1 overflow-hidden",
                 Sidebar {

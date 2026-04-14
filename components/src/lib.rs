@@ -15,5 +15,6 @@ pub mod settings_items;
 pub mod settings_popups;
 pub mod showcase;
 pub mod sidebar;
+pub mod titlebar;
 pub mod stat_card;
 pub mod track_row;

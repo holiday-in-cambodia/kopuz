@@ -104,11 +104,7 @@ pub fn Sidebar(props: SidebarProps) -> Element {
         "justify-between px-6"
     };
 
-    let extra_padding = if cfg!(target_os = "macos") {
-        "pt-10"
-    } else {
-        ""
-    };
+    let extra_padding = if cfg!(target_os = "macos") { "pt-10" } else { "" };
 
     let is_server = config.read().active_source == MusicSource::Server;
     let local_class = if !is_server {
@@ -173,6 +169,7 @@ pub fn Sidebar(props: SidebarProps) -> Element {
                         i { class: "fa-solid fa-angles-left w-5 h-5 flex items-center justify-center text-lg" }
                     }
                 }
+
             }
 
             div {
