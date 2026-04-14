@@ -382,6 +382,30 @@ fn App() -> Element {
 
     hooks::use_player_task(ctrl);
 
+    // Inject CSS for all custom themes reactively
+    let custom_themes_css = use_memo(move || {
+        config
+            .read()
+            .custom_themes
+            .iter()
+            .map(|(id, ct)| utils::themes::custom_theme_to_css(id, &ct.vars))
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    });
+
+    use_effect(move || {
+        let css = custom_themes_css.read().clone();
+        // Serialize as a JSON string literal so no CSS content can escape the JS context
+        let css_json = serde_json::to_string(&css).unwrap_or_else(|_| "\"\"".to_string());
+        let _ = dioxus::document::eval(&format!(
+            r#"(function(){{
+                let el = document.getElementById('custom-themes-style');
+                if (!el) {{ el = document.createElement('style'); el.id = 'custom-themes-style'; document.head.appendChild(el); }}
+                el.textContent = {css_json};
+            }})()"#
+        ));
+    });
+
     let theme_class = if config.read().theme == "album-art" {
         "theme-default".to_string()
     } else {
@@ -595,6 +619,7 @@ fn App() -> Element {
                           }
                         },
                         Route::Settings => rsx! { pages::settings::Settings { config } },
+                        Route::ThemeEditor => rsx! { pages::theme_editor::ThemeEditorPage { config } },
                     }
                 }
                 Rightbar {
