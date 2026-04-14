@@ -3,6 +3,7 @@ pub mod jellyfin_image;
 pub mod lyrics;
 pub mod stream_buffer;
 pub mod subsonic_image;
+pub mod themes;
 use std::path::Path;
 
 pub fn format_artwork_url(path: Option<&impl AsRef<Path>>) -> Option<String> {
