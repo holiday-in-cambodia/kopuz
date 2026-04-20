@@ -87,6 +87,7 @@ loading_lyrics: "Loading lyrics..."
 lyrics_not_found: "Lyrics not found"
 no_previous_songs: "No previous songs"
 playlist_track_count: "%{count} tracks"
+music_playlist_count: "Music • %{count} tracks"
 
 # Modal Titles
 add_playlist: "Add playlist"

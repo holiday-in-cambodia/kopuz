@@ -511,7 +511,10 @@ pub fn JellyfinHome(
                                         div {
                                             h3 { class: "text-white font-bold truncate text-sm md:text-base px-1 group-hover:text-indigo-400 transition-colors", "{name}" }
                                             p { class: "text-xs md:text-sm text-white/40 truncate px-1 font-semibold mt-1",
-                                                "Music • {track_count} tracks"
+                                                {
+                                                    let track_text = rust_i18n::t!("music_playlist_count", count = track_count).to_string();
+                                                    rsx! { "{track_text}" }
+                                                }
                                             }
                                         }
                                     }
