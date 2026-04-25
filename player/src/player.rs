@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex};
 #[cfg(not(target_arch = "wasm32"))]
 use symphonia::core::audio::{AudioBufferRef, Signal};
 #[cfg(not(target_arch = "wasm32"))]
-use symphonia::core::codecs::{Decoder, CODEC_TYPE_NULL, DecoderOptions};
+use symphonia::core::codecs::{CODEC_TYPE_NULL, Decoder, DecoderOptions};
 #[cfg(not(target_arch = "wasm32"))]
 use symphonia::core::formats::{FormatOptions, SeekMode, SeekTo};
 #[cfg(not(target_arch = "wasm32"))]
@@ -57,6 +57,7 @@ pub struct Player {
     position_micros: Arc<AtomicU64>,
     finish_callback: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
 
+    position_thread_handle: Option<std::thread::JoinHandle<()>>,
     position_thread_stop: Arc<AtomicBool>,
 }
 
@@ -90,6 +91,7 @@ impl Player {
             now_playing: None,
             position_micros: Arc::new(AtomicU64::new(0)),
             finish_callback: None,
+            position_thread_handle: None,
             position_thread_stop: Arc::default(),
         }
     }
@@ -187,13 +189,12 @@ impl Player {
             let pos = position_micros.clone();
             let state = state.clone();
 
-            std::thread::spawn(move || {
+            let handle = std::thread::spawn(move || {
                 loop {
-                    std::thread::sleep(std::time::Duration::from_millis(250));
                     if stop.load(Ordering::Relaxed) {
                         break;
                     }
-                    let st = state.lock().unwrap();
+                    let st = state.lock().unwrap_or_else(|e| e.into_inner());
                     if st.finished {
                         break;
                     }
@@ -203,8 +204,10 @@ impl Player {
                         let micros = pos.load(std::sync::atomic::Ordering::Relaxed);
                         systemint::update_position(micros as f64 / 1_000_000.0);
                     }
+                    std::thread::sleep(Duration::from_millis(250));
                 }
             });
+            self.position_thread_handle = Some(handle);
         }
 
         stream
@@ -656,6 +659,8 @@ impl Player {
     }
 
     fn stop_internal(&mut self) {
+        self.position_thread_stop.store(true, Ordering::Relaxed);
+        self.position_micros.store(0, Ordering::SeqCst);
         {
             let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
             st.stopped = true;
@@ -666,6 +671,9 @@ impl Player {
         self.ring_buf_consumer = None;
 
         if let Some(handle) = self.decoder_handle.take() {
+            let _ = handle.join();
+        }
+        if let Some(handle) = self.position_thread_handle.take() {
             let _ = handle.join();
         }
     }
