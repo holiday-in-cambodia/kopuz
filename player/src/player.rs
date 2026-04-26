@@ -1,3 +1,4 @@
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 pub struct NowPlayingMeta {
@@ -22,7 +23,7 @@ use std::sync::{Arc, Mutex};
 #[cfg(not(target_arch = "wasm32"))]
 use symphonia::core::audio::{AudioBufferRef, Signal};
 #[cfg(not(target_arch = "wasm32"))]
-use symphonia::core::codecs::{Decoder, CODEC_TYPE_NULL, DecoderOptions};
+use symphonia::core::codecs::{CODEC_TYPE_NULL, Decoder, DecoderOptions};
 #[cfg(not(target_arch = "wasm32"))]
 use symphonia::core::formats::{FormatOptions, SeekMode, SeekTo};
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,6 +56,9 @@ pub struct Player {
     now_playing: Option<NowPlayingMeta>,
     position_micros: Arc<AtomicU64>,
     finish_callback: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+
+    position_thread_handle: Option<std::thread::JoinHandle<()>>,
+    position_thread_stop: Arc<AtomicBool>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -87,6 +91,8 @@ impl Player {
             now_playing: None,
             position_micros: Arc::new(AtomicU64::new(0)),
             finish_callback: None,
+            position_thread_handle: None,
+            position_thread_stop: Arc::default(),
         }
     }
 
@@ -109,12 +115,7 @@ impl Player {
         let state = Arc::new(Mutex::new(PlaybackState {
             paused: false,
             stopped: false,
-            volume: {
-                self.state
-                    .lock()
-                    .unwrap_or_else(|e| e.into_inner())
-                    .volume
-            },
+            volume: { self.state.lock().unwrap_or_else(|e| e.into_inner()).volume },
             seek_to: None,
             finished: false,
         }));
@@ -145,9 +146,7 @@ impl Player {
             .build_output_stream(
                 &self.stream_config,
                 move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                    let st = stream_state
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let st = stream_state.lock().unwrap_or_else(|e| e.into_inner());
                     let volume = st.volume;
                     let paused = st.paused;
                     drop(st);
@@ -159,9 +158,7 @@ impl Player {
                         return;
                     }
 
-                    let cons = stream_consumer
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner());
+                    let cons = stream_consumer.lock().unwrap_or_else(|e| e.into_inner());
                     let read = cons.read(data).unwrap_or(0);
                     drop(cons);
 
@@ -184,9 +181,39 @@ impl Player {
             )
             .map_err(|e| format!("failed to build output stream: {e}"))?;
 
+        #[cfg(target_os = "linux")]
+        {
+            self.position_thread_stop.store(true, Ordering::Relaxed);
+            let stop = Arc::new(AtomicBool::new(false));
+            self.position_thread_stop = stop.clone();
+            let pos = position_micros.clone();
+            let state = state.clone();
+
+            let handle = std::thread::spawn(move || {
+                loop {
+                    if stop.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    let st = state.lock().unwrap_or_else(|e| e.into_inner());
+                    if st.finished {
+                        break;
+                    }
+                    let paused = st.paused;
+                    drop(st);
+                    if !paused {
+                        let micros = pos.load(std::sync::atomic::Ordering::Relaxed);
+                        systemint::update_position(micros as f64 / 1_000_000.0);
+                    }
+                    std::thread::sleep(Duration::from_millis(250));
+                }
+            });
+            self.position_thread_handle = Some(handle);
+        }
+
         stream
             .play()
             .map_err(|e| format!("failed to start output stream: {e}"))?;
+
         self._stream = Some(stream);
         self._device = device;
 
@@ -270,22 +297,23 @@ impl Player {
             .map(|c| c.count())
             .unwrap_or(target_channels);
 
-        let mut decoder: Box<dyn symphonia::core::codecs::Decoder> = match symphonia::default::get_codecs()
-            .make(&track.codec_params, &DecoderOptions::default())
-        {
-            Ok(d) => d,
-            Err(_) => match symphonia_adapter_libopus::OpusDecoder::try_new(
-                &track.codec_params,
-                &DecoderOptions::default(),
-            ) {
-                Ok(d) => Box::new(d),
-                Err(e) => {
-                    eprintln!("symphonia codec error: {}", e);
-                    finish_natural(&state);
-                    return;
-                }
-            },
-        };
+        let mut decoder: Box<dyn symphonia::core::codecs::Decoder> =
+            match symphonia::default::get_codecs()
+                .make(&track.codec_params, &DecoderOptions::default())
+            {
+                Ok(d) => d,
+                Err(_) => match symphonia_adapter_libopus::OpusDecoder::try_new(
+                    &track.codec_params,
+                    &DecoderOptions::default(),
+                ) {
+                    Ok(d) => Box::new(d),
+                    Err(e) => {
+                        eprintln!("symphonia codec error: {}", e);
+                        finish_natural(&state);
+                        return;
+                    }
+                },
+            };
 
         loop {
             {
@@ -631,6 +659,8 @@ impl Player {
     }
 
     fn stop_internal(&mut self) {
+        self.position_thread_stop.store(true, Ordering::Relaxed);
+        self.position_micros.store(0, Ordering::SeqCst);
         {
             let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
             st.stopped = true;
@@ -641,6 +671,9 @@ impl Player {
         self.ring_buf_consumer = None;
 
         if let Some(handle) = self.decoder_handle.take() {
+            let _ = handle.join();
+        }
+        if let Some(handle) = self.position_thread_handle.take() {
             let _ = handle.join();
         }
     }
