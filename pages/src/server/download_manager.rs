@@ -124,6 +124,26 @@ pub fn queue_downloads(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+pub fn delete_downloads(
+    ids: Vec<String>,
+    mut config: Signal<AppConfig>,
+    mut queue: Signal<DownloadQueue>,
+) {
+    let mut conf = config.write();
+    let mut q = queue.write();
+
+    for id in ids {
+        if let Some(path_str) = conf.offline_tracks.remove(&id) {
+            let path = std::path::Path::new(&path_str);
+            if path.exists() {
+                let _ = std::fs::remove_file(path);
+            }
+        }
+        q.items.retain(|i| i.id != id);
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 async fn download_with_progress(
     item_id: &str,
     url: &str,

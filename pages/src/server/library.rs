@@ -188,7 +188,11 @@ pub fn JellyfinLibrary(
 
             let path_str = track.path.to_string_lossy().to_string();
             let item_id: String = path_str.split(':').nth(1).unwrap_or("").to_string();
-            let is_downloaded = config.read().offline_tracks.contains_key(&item_id);
+            let is_downloaded = if let Some(path_str) = config.read().offline_tracks.get(&item_id) {
+                std::path::Path::new(path_str).exists()
+            } else {
+                false
+            };
             let is_downloading = download_queue.read().items.iter().any(|i| i.id == item_id && matches!(i.status, DownloadStatus::Queued | DownloadStatus::Downloading));
             let item_id_dl = item_id.clone();
             let track_title = track.title.clone();
@@ -237,12 +241,14 @@ pub fn JellyfinLibrary(
                     on_delete: move |_| active_menu_track.set(None),
                     hide_delete: true,
                     on_download: move |_| {
-                        active_menu_track.set(None);
-                        queue_downloads(
-                            vec![(item_id_dl.clone(), track_title.clone(), track_artist.clone())],
-                            config,
-                            download_queue,
-                        );
+                        if !is_downloaded {
+                            active_menu_track.set(None);
+                            queue_downloads(
+                                vec![(item_id_dl.clone(), track_title.clone(), track_artist.clone())],
+                                config,
+                                download_queue,
+                            );
+                        }
                     },
                     on_play: move |_| {
                         queue.set((*queue_arc).clone());

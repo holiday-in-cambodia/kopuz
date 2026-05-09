@@ -25,6 +25,8 @@ pub fn PlaylistDetail(
     mut current_queue_index: Signal<usize>,
     on_close: EventHandler<()>,
     on_download_all: Option<EventHandler<()>>,
+    on_delete_all: Option<EventHandler<()>>,
+    on_download_track: Option<EventHandler<usize>>,
     #[props(default = false)] is_downloading_all: bool,
 ) -> Element {
     let store = playlist_store.read();
@@ -535,6 +537,8 @@ pub fn PlaylistDetail(
                     }
                 },
                 on_download_all: if is_jellyfin { on_download_all } else { None },
+                on_download_track: if is_jellyfin { on_download_track } else { None },
+                on_delete_all: if is_jellyfin { on_delete_all } else { None },
                 is_downloading_all,
             }
 

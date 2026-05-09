@@ -113,7 +113,12 @@ pub async fn download_tracks_batch(
     mut config: dioxus::prelude::Signal<AppConfig>,
 ) {
     for id in item_ids {
-        if config.read().offline_tracks.contains_key(&id) {
+        let is_downloaded = if let Some(path_str) = config.read().offline_tracks.get(&id) {
+            std::path::Path::new(path_str).exists()
+        } else {
+            false
+        };
+        if is_downloaded {
             continue;
         }
         let result = {

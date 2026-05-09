@@ -38,11 +38,15 @@ pub fn TrackRow(
         let (dl_label, dl_icon) = if is_downloading {
             ("Downloading...", "fa-solid fa-spinner fa-spin")
         } else if is_downloaded {
-            ("Re-download", "fa-solid fa-check-circle")
+            ("Remove Download", "fa-solid fa-trash-can")
         } else {
             ("Download Offline", "fa-solid fa-download")
         };
-        actions.push(MenuAction::new(dl_label, dl_icon));
+        let mut action = MenuAction::new(dl_label, dl_icon);
+        if is_downloaded {
+            action = action.destructive();
+        }
+        actions.push(action);
     }
 
     if !hide_delete {

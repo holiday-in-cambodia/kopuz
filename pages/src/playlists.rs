@@ -126,6 +126,8 @@ pub fn PlaylistsPage(
                         let q = download_queue.read();
                         track_ids.iter().any(|tid| q.items.iter().any(|i| &i.id == tid && matches!(i.status, DownloadStatus::Queued | DownloadStatus::Downloading)))
                     };
+                    let pid_for_del = pid.clone();
+                    let pid_for_dl_track = pid.clone();
                     rsx! {
                         PlaylistDetail {
                             playlist_id: pid,
@@ -164,6 +166,57 @@ pub fn PlaylistsPage(
                                 };
                                 if requests.is_empty() { return; }
                                 queue_downloads(requests, config, download_queue);
+                            },
+                            on_delete_all: {
+                                move |_| {
+                                    let ids: Vec<String> = {
+                                        let store = playlist_store.read();
+                                        store.jellyfin_playlists
+                                            .iter()
+                                            .find(|p| p.id == pid_for_del)
+                                            .map(|p| p.tracks.clone())
+                                            .unwrap_or_default()
+                                    };
+                                    if !ids.is_empty() {
+                                        crate::server::download_manager::delete_downloads(ids, config, download_queue);
+                                    }
+                                }
+                            },
+                            on_download_track: {
+                                move |idx: usize| {
+                                    let store = playlist_store.read();
+                                    let lib = library.read();
+                                    let mut track_id = String::new();
+                                    let mut track_title = String::new();
+                                    let mut track_artist = String::new();
+
+                                    if let Some(p) = store.jellyfin_playlists.iter().find(|p| p.id == pid_for_dl_track) {
+                                        if let Some(tid) = p.tracks.get(idx) {
+                                            track_id = tid.clone();
+                                            if let Some(meta) = lib.jellyfin_tracks.iter().find(|t| t.path.to_string_lossy().contains(tid.as_str())) {
+                                                track_title = meta.title.clone();
+                                                track_artist = meta.artist.clone();
+                                            }
+                                        }
+                                    }
+
+                                    if !track_id.is_empty() {
+                                        let is_downloaded = if let Some(path_str) = config.read().offline_tracks.get(&track_id) {
+                                            std::path::Path::new(path_str).exists()
+                                        } else {
+                                            false
+                                        };
+                                        if is_downloaded {
+                                            crate::server::download_manager::delete_downloads(vec![track_id], config, download_queue);
+                                        } else {
+                                            crate::server::download_manager::queue_downloads(
+                                                vec![(track_id, track_title, track_artist)],
+                                                config,
+                                                download_queue
+                                            );
+                                        }
+                                    }
+                                }
                             },
                         }
                     }
