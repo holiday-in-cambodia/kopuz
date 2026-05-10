@@ -596,10 +596,31 @@ impl PlayerController {
                                 let scrobble_gen = current_gen;
                                 let scrobble_play_gen = play_generation;
                                 let scrobble_cfg = cfg_signal;
+                                let scrobble_id = id.clone();
                                 let duration_secs = scrobble_track.duration;
                                 let threshold_secs = std::cmp::min(240, (duration_secs / 2) as u64);
 
                                 spawn(async move {
+                                    {
+                                        let conf = scrobble_cfg.read();
+                                        if let Some(server) = conf.server.as_ref() {
+                                            if matches!(server.service, MusicService::Subsonic | MusicService::Custom) {
+                                                if let (Some(password), Some(username)) =
+                                                    (&server.access_token, &server.user_id)
+                                                {
+                                                    let client = ::server::subsonic::SubsonicClient::new(
+                                                        &server.url,
+                                                        username,
+                                                        password,
+                                                    );
+                                                    if let Err(e) = client.scrobble_now_playing(&scrobble_id).await {
+                                                        tracing::warn!("Subsonic now-playing failed: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     let token_raw = scrobble_cfg.read().musicbrainz_token.clone();
                                     if !token_raw.is_empty() {
                                         let auth = if token_raw.contains(' ') {
@@ -622,7 +643,7 @@ impl PlayerController {
                                         .await
                                         {
                                             tracing::warn!(
-                                                "Jellyfin: failed to submit playing_now: {}",
+                                                "failed to submit playing_now: {}",
                                                 e
                                             );
                                         }
@@ -635,6 +656,31 @@ impl PlayerController {
 
                                     if *scrobble_play_gen.read() != scrobble_gen {
                                         return;
+                                    }
+
+                                    {
+                                        let conf = scrobble_cfg.read();
+                                        if let Some(server) = conf.server.as_ref() {
+                                            if matches!(server.service, MusicService::Subsonic | MusicService::Custom) {
+                                                if let (Some(password), Some(username)) =
+                                                    (&server.access_token, &server.user_id)
+                                                {
+                                                    let client = ::server::subsonic::SubsonicClient::new(
+                                                        &server.url,
+                                                        username,
+                                                        password,
+                                                    );
+                                                    match client.scrobble(&scrobble_id).await {
+                                                        Ok(_) => tracing::info!(
+                                                            "Subsonic scrobbled: {} - {}",
+                                                            scrobble_track.artist,
+                                                            scrobble_track.title
+                                                        ),
+                                                        Err(e) => tracing::warn!("Subsonic scrobble failed: {}", e),
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
 
                                     let token_raw = scrobble_cfg.read().musicbrainz_token.clone();
@@ -662,11 +708,11 @@ impl PlayerController {
                                     .await
                                     {
                                         Ok(_) => tracing::info!(
-                                            "Jellyfin scrobbled: {} - {}",
+                                            "scrobbled: {} - {}",
                                             scrobble_track.artist,
                                             scrobble_track.title
                                         ),
-                                        Err(e) => tracing::warn!("Jellyfin scrobble failed: {}", e),
+                                        Err(e) => tracing::warn!("scrobble failed: {}", e),
                                     }
                                 });
 
@@ -744,11 +790,32 @@ impl PlayerController {
                                 let scrobble_gen = current_gen;
                                 let scrobble_play_gen = play_generation;
                                 let scrobble_cfg = cfg_signal;
+                                let scrobble_id = id.clone();
                                 let duration_secs = scrobble_track.duration;
                                 let threshold_secs =
                                     std::cmp::min(240, (duration_secs / 2) as u64);
 
                                 spawn(async move {
+                                    {
+                                        let conf = scrobble_cfg.read();
+                                        if let Some(server) = conf.server.as_ref() {
+                                            if matches!(server.service, MusicService::Subsonic | MusicService::Custom) {
+                                                if let (Some(password), Some(username)) =
+                                                    (&server.access_token, &server.user_id)
+                                                {
+                                                    let client = ::server::subsonic::SubsonicClient::new(
+                                                        &server.url,
+                                                        username,
+                                                        password,
+                                                    );
+                                                    if let Err(e) = client.scrobble_now_playing(&scrobble_id).await {
+                                                        tracing::warn!("Subsonic now-playing failed: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     let token_raw = scrobble_cfg.read().musicbrainz_token.clone();
                                     if !token_raw.is_empty() {
                                         let auth = if token_raw.contains(' ') {
@@ -771,7 +838,7 @@ impl PlayerController {
                                         .await
                                         {
                                             tracing::warn!(
-                                                "Jellyfin: failed to submit playing_now: {}",
+                                                "failed to submit playing_now: {}",
                                                 e
                                             );
                                         }
@@ -782,6 +849,31 @@ impl PlayerController {
 
                                     if *scrobble_play_gen.read() != scrobble_gen {
                                         return;
+                                    }
+
+                                    {
+                                        let conf = scrobble_cfg.read();
+                                        if let Some(server) = conf.server.as_ref() {
+                                            if matches!(server.service, MusicService::Subsonic | MusicService::Custom) {
+                                                if let (Some(password), Some(username)) =
+                                                    (&server.access_token, &server.user_id)
+                                                {
+                                                    let client = ::server::subsonic::SubsonicClient::new(
+                                                        &server.url,
+                                                        username,
+                                                        password,
+                                                    );
+                                                    match client.scrobble(&scrobble_id).await {
+                                                        Ok(_) => tracing::info!(
+                                                            "Subsonic scrobbled: {} - {}",
+                                                            scrobble_track.artist,
+                                                            scrobble_track.title
+                                                        ),
+                                                        Err(e) => tracing::warn!("Subsonic scrobble failed: {}", e),
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
 
                                     let token_raw = scrobble_cfg.read().musicbrainz_token.clone();
@@ -809,12 +901,12 @@ impl PlayerController {
                                     .await
                                     {
                                         Ok(_) => tracing::info!(
-                                            "Jellyfin scrobbled: {} - {}",
+                                            "scrobbled: {} - {}",
                                             scrobble_track.artist,
                                             scrobble_track.title
                                         ),
                                         Err(e) => {
-                                            tracing::warn!("Jellyfin scrobble failed: {}", e)
+                                            tracing::warn!("scrobble failed: {}", e)
                                         }
                                     }
                                 });
