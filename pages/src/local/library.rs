@@ -54,6 +54,10 @@ pub fn LocalLibrary(
     let all_tracks = displayed_tracks();
     let cover_urls = std::sync::Arc::new(album_covers());
     let is_empty = all_tracks.is_empty();
+    let all_selected = !is_empty
+        && all_tracks
+            .iter()
+            .all(|track| selected_tracks.read().contains(&track.path));
     let queue_source = std::sync::Arc::new(queue_tracks());
 
     let scroll_top = *scroll_stat.read();
@@ -281,7 +285,7 @@ div {
                 class: "flex items-center justify-between mb-4",
                 div { class: "flex items-center gap-3",
                     button {
-                        class: if !is_empty && displayed_tracks().iter().all(|track| selected_tracks.read().contains(&track.path)) {
+                        class: if all_selected {
                             "w-4 h-4 rounded border border-indigo-400 bg-indigo-500 text-white flex items-center justify-center transition-colors"
                         } else {
                             "w-4 h-4 rounded border border-white/20 bg-white/5 hover:border-white/50 transition-colors"
@@ -290,7 +294,6 @@ div {
                         disabled: is_empty,
                         onclick: move |_| {
                             let tracks = displayed_tracks();
-                            let all_selected = !tracks.is_empty() && tracks.iter().all(|track| selected_tracks.read().contains(&track.path));
                             if all_selected {
                                 selected_tracks.write().clear();
                                 is_selection_mode.set(false);
@@ -299,7 +302,7 @@ div {
                                 is_selection_mode.set(true);
                             }
                         },
-                        if !is_empty && displayed_tracks().iter().all(|track| selected_tracks.read().contains(&track.path)) {
+                        if all_selected {
                             i { class: "fa-solid fa-check", style: "font-size: 9px;" }
                         }
                     }

@@ -221,7 +221,7 @@ pub fn LocalFavorites(
                         } else {
                             "w-4 h-4 rounded border border-white/20 bg-white/5 hover:border-white/50 transition-colors"
                         },
-                        aria_label: "Select all tracks",
+                        aria_label: i18n::t("select_all_tracks"),
                         onclick: move |_| {
                             let all_selected = !displayed_tracks.is_empty() && displayed_tracks.iter().all(|(track, _)| selected_tracks.read().contains(&track.path));
                             if all_selected {
@@ -236,7 +236,7 @@ pub fn LocalFavorites(
                             i { class: "fa-solid fa-check", style: "font-size: 9px;" }
                         }
                     }
-                    span { "Select all" }
+                    span { "{i18n::t(\"select_all\")}" }
                 }
                 div {
                     class: "space-y-1",

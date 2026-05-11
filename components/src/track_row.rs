@@ -2,6 +2,23 @@ use crate::dots_menu::{DotsMenu, MenuAction};
 use dioxus::prelude::*;
 use reader::models::Track;
 
+fn handle_select_click(
+    is_selected: bool,
+    is_selection_mode: bool,
+    on_select: Option<EventHandler<bool>>,
+    on_long_press: Option<EventHandler<()>>,
+) {
+    if !is_selected && !is_selection_mode {
+        if let Some(handler) = on_long_press {
+            handler.call(());
+        } else if let Some(handler) = on_select {
+            handler.call(true);
+        }
+    } else if let Some(handler) = on_select {
+        handler.call(!is_selected);
+    }
+}
+
 #[component]
 pub fn TrackRow(
     track: Track,
@@ -103,15 +120,7 @@ pub fn TrackRow(
                     long_press_occurred.set(false);
                     return;
                 }
-                if !is_selected && !is_selection_mode {
-                    if let Some(handler) = on_long_press {
-                        handler.call(());
-                    } else if let Some(handler) = on_select {
-                        handler.call(true);
-                    }
-                } else if let Some(handler) = on_select {
-                    handler.call(!is_selected);
-                }
+                handle_select_click(is_selected, is_selection_mode, on_select, on_long_press);
             },
             ondoubleclick: move |evt| {
                 evt.stop_propagation();
@@ -142,15 +151,7 @@ pub fn TrackRow(
                         aria_label: if is_selected { "Deselect track" } else { "Select track" },
                         onclick: move |evt| {
                             evt.stop_propagation();
-                            if !is_selected && !is_selection_mode {
-                                if let Some(handler) = on_long_press {
-                                    handler.call(());
-                                } else if let Some(handler) = on_select {
-                                    handler.call(true);
-                                }
-                            } else if let Some(handler) = on_select {
-                                handler.call(!is_selected);
-                            }
+                            handle_select_click(is_selected, is_selection_mode, on_select, on_long_press);
                         },
                         if is_selected {
                             i { class: "fa-solid fa-check", style: "font-size: 9px;" }
