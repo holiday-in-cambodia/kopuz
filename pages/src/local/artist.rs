@@ -451,6 +451,12 @@ pub fn LocalArtist(
                                         active_menu_track.set(None);
                                     }
                                 },
+                                on_queue: move |idx: usize| {
+                                    if let Some(track) = artist_tracks().get(idx) {
+                                        queue.write().push(track.clone());
+                                        active_menu_track.set(None);
+                                    }
+                                },
                                 on_delete_track: move |idx: usize| {
                                     if let Some(track) = artist_tracks().get(idx) {
                                         if std::fs::remove_file(&track.path).is_ok() {
