@@ -233,6 +233,16 @@ fn thumb_cache_path(file_path: &str) -> std::path::PathBuf {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+fn hq_cache_path(file_path: &str) -> std::path::PathBuf {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    "hq".hash(&mut hasher);
+    file_path.hash(&mut hasher);
+    let hash = hasher.finish();
+    std::env::temp_dir().join(format!("rusic_hq_{:016x}.jpg", hash))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn make_thumbnail(raw: &[u8], cache_path: &std::path::Path) -> Option<Vec<u8>> {
     use image::GenericImageView;
     use image::codecs::jpeg::JpegEncoder;
@@ -245,6 +255,31 @@ fn make_thumbnail(raw: &[u8], cache_path: &std::path::Path) -> Option<Vec<u8>> {
     };
     let mut out: Vec<u8> = Vec::new();
     img.write_with_encoder(JpegEncoder::new_with_quality(&mut out, 75)).ok()?;
+    let _ = std::fs::write(cache_path, &out);
+    Some(out)
+}
+
+// Returns Some(compressed) when the image exceeded the size/dimension limit,
+// or None when the original is already small enough to serve as-is.
+#[cfg(not(target_arch = "wasm32"))]
+fn make_hq_image(raw: &[u8], cache_path: &std::path::Path) -> Option<Vec<u8>> {
+    use image::GenericImageView;
+    use image::codecs::jpeg::JpegEncoder;
+    const SIZE_LIMIT: usize = 2 * 1024 * 1024; // 2 MB
+    const MAX_DIM: u32 = 1920;
+    const QUALITY: u8 = 85;
+
+    if raw.len() <= SIZE_LIMIT {
+        return None;
+    }
+    let img = image::load_from_memory(raw).ok()?;
+    let img = if img.width() > MAX_DIM || img.height() > MAX_DIM {
+        img.thumbnail(MAX_DIM, MAX_DIM)
+    } else {
+        img
+    };
+    let mut out: Vec<u8> = Vec::new();
+    img.write_with_encoder(JpegEncoder::new_with_quality(&mut out, QUALITY)).ok()?;
     let _ = std::fs::write(cache_path, &out);
     Some(out)
 }
@@ -358,16 +393,48 @@ fn main() {
                     };
 
                     if high_quality {
-                        let mime = if file_path.ends_with(".png") { "image/png" } else { "image/jpeg" };
+                        let hq_path = hq_cache_path(&file_path);
+                        if hq_path.exists() {
+                            if let Ok(b) = tokio::fs::read(&hq_path).await {
+                                responder.respond(
+                                    http::Response::builder()
+                                        .header("Content-Type", "image/jpeg")
+                                        .header("Access-Control-Allow-Origin", "*")
+                                        .header("Cache-Control", "public, max-age=31536000")
+                                        .body(std::borrow::Cow::from(b))
+                                        .unwrap(),
+                                );
+                                return;
+                            }
+                        }
                         match tokio::fs::read(&file_path).await {
-                            Ok(b) => responder.respond(
-                                http::Response::builder()
-                                    .header("Content-Type", mime)
-                                    .header("Access-Control-Allow-Origin", "*")
-                                    .header("Cache-Control", "public, max-age=31536000")
-                                    .body(std::borrow::Cow::from(b))
-                                    .unwrap(),
-                            ),
+                            Ok(raw) => {
+                                let file_path_clone = file_path.clone();
+                                let result = tokio::task::spawn_blocking(move || {
+                                    make_hq_image(&raw, &hq_path)
+                                        .map(|b| (b, "image/jpeg"))
+                                        .unwrap_or_else(|| {
+                                            let mime = if file_path_clone.ends_with(".png") { "image/png" } else { "image/jpeg" };
+                                            (raw, mime)
+                                        })
+                                }).await;
+                                match result {
+                                    Ok((bytes, mime)) => responder.respond(
+                                        http::Response::builder()
+                                            .header("Content-Type", mime)
+                                            .header("Access-Control-Allow-Origin", "*")
+                                            .header("Cache-Control", "public, max-age=31536000")
+                                            .body(std::borrow::Cow::from(bytes))
+                                            .unwrap(),
+                                    ),
+                                    Err(_) => responder.respond(
+                                        http::Response::builder()
+                                            .status(500)
+                                            .body(std::borrow::Cow::from(Vec::new()))
+                                            .unwrap(),
+                                    ),
+                                }
+                            }
                             Err(_) => responder.respond(
                                 http::Response::builder()
                                     .status(404)
