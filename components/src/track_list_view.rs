@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use hooks::use_player_controller::PlayerController;
+use rand::seq::SliceRandom;
 use reader::{Library, PlaylistStore, Track};
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -46,6 +47,7 @@ pub fn TrackListView(mut props: TrackListViewProps) -> Element {
     let tracks_select_all = props.tracks.clone();
     let tracks_long_press = props.tracks.clone();
     let tracks_select = props.tracks.clone();
+    let tracks_play_all = props.tracks.clone();
     let tracks_play = props.tracks.clone();
     let tracks_add = props.tracks.clone();
     let tracks_menu = props.tracks.clone();
@@ -100,6 +102,19 @@ pub fn TrackListView(mut props: TrackListViewProps) -> Element {
                                 is_selection_mode.set(false);
                             }
                         }
+                    }
+                },
+                on_play_all: move |_| {
+                    let is_shuffle = *ctrl.shuffle.peek();
+                    if is_shuffle {
+                        let mut shuffled = tracks_play_all.clone();
+                        shuffled.shuffle(&mut rand::thread_rng());
+                        ctrl.queue.set(shuffled);
+                        ctrl.current_queue_index.set(0);
+                        ctrl.play_track(0);
+                    } else {
+                        ctrl.queue.set(tracks_play_all.clone());
+                        ctrl.play_track(0);
                     }
                 },
                 on_play: move |idx: usize| {

@@ -4,6 +4,7 @@ use components::playlist_modal::PlaylistModal;
 use components::selection_bar::SelectionBar;
 use config::{AppConfig, ArtistViewOrder, MusicService};
 use dioxus::prelude::*;
+use rand::seq::SliceRandom;
 use reader::{Library, PlaylistStore};
 use server::jellyfin::JellyfinClient;
 use server::subsonic::SubsonicClient;
@@ -687,6 +688,20 @@ pub fn JellyfinArtist(
                                                 is_selection_mode.set(false);
                                             }
                                         }
+                                    }
+                                },
+                                on_play_all: move |_| {
+                                    let tracks = artist_tracks();
+                                    let is_shuffle = *ctrl.shuffle.peek();
+                                    if is_shuffle {
+                                        let mut shuffled = tracks.clone();
+                                        shuffled.shuffle(&mut rand::thread_rng());
+                                        queue.set(shuffled);
+                                        current_queue_index.set(0);
+                                        ctrl.play_track(0);
+                                    } else {
+                                        queue.set(tracks.clone());
+                                        ctrl.play_track(0);
                                     }
                                 },
                                 on_play: move |idx: usize| {
