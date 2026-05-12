@@ -1072,7 +1072,7 @@ impl PlayerController {
 
     fn play_next_with_transition(&mut self, allow_crossfade: bool) {
         if *self.is_loading.peek() {
-            return;
+            self.skip_in_progress.set(false);
         }
 
         let idx = *self.current_queue_index.peek();

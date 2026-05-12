@@ -502,16 +502,11 @@ pub fn JellyfinAlbumDetails(
                                 move |_| {
                                     let is_shuffle = *ctrl.shuffle.peek();
                                     if is_shuffle {
-                                        let mut shuffled = tracks_for_play.clone();
-                                        shuffled.shuffle(&mut rand::thread_rng());
-                                        queue.set(shuffled);
-                                        ctrl.current_queue_index.set(0);
-                                        ctrl.play_track(0);
-                                      } else {
-                                          queue.set(tracks_for_play.clone());
-                                          ctrl.play_track(0);
-                                      }
-                                  }
+                                        ctrl.play_queue_shuffled(tracks_for_play.clone());
+                                    } else {
+                                        ctrl.play_queue_linear(tracks_for_play.clone());
+                                    }
+                                }
                               },
                             i { class: "fa-solid fa-play text-xl ml-1" }
                         }
