@@ -1,41 +1,13 @@
 use config::MusicService;
-use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex};
-use std::time::Duration;
-use web_time::Instant;
 
 use crate::jellyfin::JellyfinClient;
 use crate::subsonic::SubsonicClient;
 
-static SUBSONIC_SESSION_SECRETS: LazyLock<Mutex<HashMap<String, (String, Instant)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-const SUBSONIC_SESSION_TTL: Duration = Duration::from_secs(60 * 60 * 24);
-
-pub fn resolve_subsonic_secret(token_or_password: &str) -> Option<String> {
-    if let Ok(mut store) = SUBSONIC_SESSION_SECRETS.lock() {
-        if let Some((secret, created_at)) = store.get(token_or_password).cloned() {
-            if created_at.elapsed() <= SUBSONIC_SESSION_TTL {
-                return Some(secret);
-            }
-            store.remove(token_or_password);
-            return None;
-        }
-    }
-
-    // Raw password can be used directly only for non-session-token inputs (e.g. fresh login).
-    if uuid::Uuid::parse_str(token_or_password).is_ok() {
+pub fn resolve_subsonic_secret(password: &str) -> Option<String> {
+    if password.is_empty() {
         None
     } else {
-        Some(token_or_password.to_string())
-    }
-}
-
-fn store_subsonic_secret(session_token: &str, password: &str) {
-    if let Ok(mut store) = SUBSONIC_SESSION_SECRETS.lock() {
-        store.insert(
-            session_token.to_string(),
-            (password.to_string(), Instant::now()),
-        );
+        Some(password.to_string())
     }
 }
 
@@ -76,10 +48,8 @@ impl ProviderClient {
             MusicService::Subsonic | MusicService::Custom => {
                 let client = SubsonicClient::new(&self.server_url, username, password);
                 client.ping().await?;
-                let session_token = uuid::Uuid::new_v4().to_string();
-                store_subsonic_secret(&session_token, password);
                 Ok(AuthSession {
-                    access_token: session_token,
+                    access_token: password.to_string(),
                     user_id: username.to_string(),
                 })
             }
