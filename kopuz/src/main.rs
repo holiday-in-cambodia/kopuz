@@ -350,6 +350,10 @@ fn main() {
         let _ = std::fs::create_dir_all(&webview_data_dir);
 
         let config = dioxus::desktop::Config::new()
+            .with_custom_head(
+                "<style>html,body{background:#000;margin:0;padding:0}body{opacity:0}</style>"
+                    .to_string(),
+            )
             .with_data_directory(webview_data_dir)
             .with_window(window)
             .with_asynchronous_custom_protocol("artwork", |_id, request, responder: RequestAsyncResponder| {
@@ -594,6 +598,19 @@ fn App() -> Element {
                 });
             } catch(e) {}
         })()"#,
+        );
+    });
+
+    use_effect(move || {
+        let _ = dioxus::document::eval(
+            r#"(function(){
+                function show(){document.body.style.transition='opacity .15s';document.body.style.opacity='1';}
+                var links=document.querySelectorAll('link[rel="stylesheet"]');
+                if(!links.length){show();return;}
+                var loaded=0;
+                function onLoad(){if(++loaded>=links.length)show();}
+                links.forEach(function(l){if(l.sheet){onLoad();}else{l.addEventListener('load',onLoad);l.addEventListener('error',onLoad);}});
+            })();"#
         );
     });
 

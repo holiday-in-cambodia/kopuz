@@ -154,18 +154,20 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
                  } else {
                       div { class: "grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-2 py-2 border-b border-white/5 text-sm font-medium text-slate-500 mb-2 uppercase tracking-wider",
                            div { class: "flex items-center w-24 shrink-0",
-                               if let Some(handler) = props.on_select_all {
-                                   div { class: "mr-4 flex items-center justify-center w-6 h-6 shrink-0",
-                                       button {
-                                           class: if props.all_selected {
-                                               "w-4 h-4 rounded border border-indigo-400 bg-indigo-500 text-white flex items-center justify-center transition-colors"
-                                           } else {
-                                               "w-4 h-4 rounded border border-white/20 bg-white/5 hover:border-white/50 transition-colors"
-                                           },
-                                           aria_label: if props.all_selected { "Deselect all tracks" } else { "Select all tracks" },
-                                           onclick: move |_| handler.call(!props.all_selected),
-                                           if props.all_selected {
-                                               i { class: "fa-solid fa-check", style: "font-size: 9px;" }
+                               if props.is_selection_mode {
+                                   if let Some(handler) = props.on_select_all {
+                                       div { class: "mr-4 flex items-center justify-center w-6 h-6 shrink-0",
+                                           button {
+                                               class: if props.all_selected {
+                                                   "w-4 h-4 rounded border border-indigo-400 bg-indigo-500 text-white flex items-center justify-center transition-colors"
+                                               } else {
+                                                   "w-4 h-4 rounded border border-white/20 bg-white/5 hover:border-white/50 transition-colors"
+                                               },
+                                               aria_label: if props.all_selected { "Deselect all tracks" } else { "Select all tracks" },
+                                               onclick: move |_| handler.call(!props.all_selected),
+                                               if props.all_selected {
+                                                   i { class: "fa-solid fa-check", style: "font-size: 9px;" }
+                                               }
                                            }
                                        }
                                    }

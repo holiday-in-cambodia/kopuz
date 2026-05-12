@@ -140,7 +140,7 @@ pub fn TrackRow(
                 }
             },
 
-            if on_select.is_some() {
+            if on_select.is_some() && is_selection_mode {
                 div { class: "mr-4 flex items-center justify-center w-6 h-6 shrink-0",
                     button {
                         class: if is_selected {
