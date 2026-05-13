@@ -1,4 +1,6 @@
 use config::MusicSource;
+#[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+use dioxus::desktop::use_window;
 use dioxus::prelude::*;
 use kopuz_route::Route;
 
@@ -131,6 +133,16 @@ pub fn SidebarModern(props: SidebarProps) -> Element {
         div {
             class: "h-full flex flex-col shrink-0 select-none relative border-r border-white/5",
             style: "width: {current_width}px; background: rgba(0,0,0,0.5);",
+
+            if cfg!(all(not(target_arch = "wasm32"), target_os = "macos")) {
+                div {
+                    class: "h-10 flex-shrink-0",
+                    onmousedown: move |_| {
+                        #[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
+                        use_window().drag();
+                    }
+                }
+            }
 
             if !cfg!(target_arch = "wasm32") && config.read().show_source_toggle {
                 if collapsed {
