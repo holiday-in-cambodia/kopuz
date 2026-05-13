@@ -723,7 +723,7 @@ pub fn JellyfinArtist(
                                 },
                                 on_queue: move |idx: usize| {
                                     if let Some(track) = artist_tracks().get(idx) {
-                                        queue.write().push(track.clone());
+                                        ctrl.add_to_queue(vec![track.clone()]);
                                         active_menu_track.set(None);
                                     }
                                 },

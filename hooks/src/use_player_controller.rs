@@ -1219,6 +1219,22 @@ impl PlayerController {
         self.play_track(0);
     }
 
+    pub fn add_to_queue(&mut self, tracks: impl IntoIterator<Item = Track>) {
+        let tracks: Vec<Track> = tracks.into_iter().collect();
+        let count = tracks.len();
+        if count == 0 { return; }
+
+        self.queue.with_mut(|q| q.extend(tracks));
+
+        if *self.shuffle.peek() {
+            let q_len = self.queue.peek().len();
+            let start_idx = q_len - count;
+            self.shuffle_order.with_mut(|so| {
+                (start_idx..q_len).for_each(|idx| so.push(idx));
+            });
+        }
+    }
+
     pub fn toggle_shuffle(&mut self) {
         let now_on = !*self.shuffle.peek();
         self.shuffle.set(now_on);

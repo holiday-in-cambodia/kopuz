@@ -36,6 +36,7 @@ pub fn JellyfinAlbum(
                 .cmp(&b.title.trim().to_lowercase())
         });
 
+
         let mut unique_albums = Vec::new();
         let mut seen_titles = std::collections::HashSet::new();
 
@@ -93,6 +94,8 @@ pub fn JellyfinAlbum(
             })
             .collect::<Vec<_>>()
     });
+
+    let mut ctrl = use_context::<hooks::use_player_controller::PlayerController>();
 
     let add_all_to_queue_text = i18n::t("add_all_to_queue").to_string();
     let add_all_to_playlist_text = i18n::t("add_all_to_playlist").to_string();
@@ -181,7 +184,7 @@ pub fn JellyfinAlbum(
                                                                     disc_cmp
                                                                 }
                                                             });
-                                                            queue.write().extend(tracks_for_queue);
+                                                            ctrl.add_to_queue(tracks_for_queue);
                                                         }
                                                         1 => {
                                                             pending_album_id_for_playlist.set(Some(id.clone()));
