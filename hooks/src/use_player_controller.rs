@@ -1225,6 +1225,12 @@ impl PlayerController {
         let queue_len = self.queue.peek().len();
         let current_idx = *self.current_queue_index.peek();
 
+        if queue_len == 0 {
+            self.shuffle_order.set(Vec::new());
+            self.current_queue_index.set(0);
+            return;
+        }
+
         // Tracks that come after the current position (play these first).
         let mut ahead: Vec<usize> = (current_idx..queue_len).collect();
         ahead.shuffle(&mut rand::thread_rng());
@@ -1336,16 +1342,17 @@ impl PlayerController {
     }
 
     pub fn move_queue_item(&mut self, from: usize, to: usize) {
-        if *self.shuffle.peek() {
-            self.shuffle_order.with_mut(|so| so.swap(from, to));
-        } else {
-            self.move_physical_queue_item(from, to);
-        }
+        self.move_physical_queue_item(from, to);
     }
 
     fn move_physical_queue_item(&mut self, from: usize, to: usize) {
         let len = self.queue.peek().len();
         if from >= len || to >= len || from == to {
+            return;
+        }
+
+        if *self.shuffle.peek() {
+            self.shuffle_order.with_mut(|so| so.swap(from, to));
             return;
         }
 
