@@ -569,6 +569,8 @@ fn main() {
 fn App() -> Element {
     let mut library = use_signal(reader::Library::default);
     let mut current_route = use_signal(|| Route::Home);
+    let mut scroll_positions: Signal<std::collections::HashMap<Route, f64>> =
+        use_signal(std::collections::HashMap::new);
     let cache_dir = use_memo(move || {
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -1227,15 +1229,17 @@ fn App() -> Element {
     });
 
     use_effect(move || {
-        let _ = current_route.read();
-        let _ = dioxus::document::eval(
-            "let el = document.getElementById('main-scroll-area'); if (el) el.scrollTop = 0;",
-        );
+        let route = *current_route.read();
+        let pos = scroll_positions.peek().get(&route).copied().unwrap_or(0.0);
+        let _ = dioxus::document::eval(&format!(
+            "let el = document.getElementById('main-scroll-area'); if (el) el.scrollTop = {pos};"
+        ));
     });
 
     provide_context(ctrl);
     provide_context(config);
     provide_context(download_queue);
+    provide_context(scroll_positions);
 
     hooks::use_player_task(ctrl);
 
@@ -1414,6 +1418,10 @@ fn App() -> Element {
                 div {
                     id: "main-scroll-area",
                     class: "flex-1 overflow-y-auto",
+                    onscroll: move |evt| {
+                        let pos = evt.scroll_top();
+                        scroll_positions.write().insert(*current_route.peek(), pos);
+                    },
                     match *current_route.read() {
                         Route::Home => rsx! {
                             pages::home::Home {
