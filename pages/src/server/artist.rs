@@ -49,10 +49,12 @@ pub fn JellyfinArtist(
     use_effect(move || {
         let use_artist_photo = config.read().artist_photo_source == ArtistPhotoSource::ArtistPhoto;
         if !use_artist_photo {
-            fetched_artist_images.write().clear();
             return;
         }
         if *is_fetching_images.read() {
+            return;
+        }
+        if !fetched_artist_images.read().is_empty() {
             return;
         }
 
