@@ -2,8 +2,8 @@ use crate::theme_editor::ThemeEditorPage;
 use ::server::provider::ProviderClient;
 use components::settings_items::{
     BackBehaviorSelector, ChannelModeSelector, DiscordPresenceSettings, EqualizerPanel,
-    LanguageSelector, MultiDirectoryPicker, MusicBrainzSettings, ServerSettings, SettingItem,
-    ThemeSelector, ToggleSetting,
+    LanguageSelector, LastFmSettings, MultiDirectoryPicker, MusicBrainzSettings, ServerSettings,
+    SettingItem, ThemeSelector, ToggleSetting,
 };
 use components::settings_popups::{AddServerPopup, LoginPopup};
 use config::{AppConfig, MusicService, OfflineQuality};
@@ -322,18 +322,28 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                                 }
                             }
                         }
-                        // SettingItem {
-                        //     title: "Last.fm",
-                        //     description: "Enter you last.fm token".to_string(),
-                        //     control: rsx! {
-                        //         LastFmSettings {
-                        //             current: config.read().lastfm_token.clone(),
-                        //             on_save: move |token: String| {
-                        //                 config.write().lastfm_token = token;
-                        //             },
-                        //         }
-                        //     }
-                        // }
+                        SettingItem {
+                            title: i18n::t("lastfm").to_string(),
+                            control: rsx! {
+                                LastFmSettings {
+                                    api_key: config.read().lastfm_api_key.clone(),
+                                    api_secret: config.read().lastfm_api_secret.clone(),
+                                    session_key: config.read().lastfm_session_key.clone(),
+
+                                    on_api_key_save: move |value: String| {
+                                        config.write().lastfm_api_key = value;
+                                    },
+
+                                    on_api_secret_save: move |value: String| {
+                                        config.write().lastfm_api_secret = value;
+                                    },
+
+                                    on_session_key_save: move |value: String| {
+                                        config.write().lastfm_session_key = value;
+                                    },
+                                }
+                            }
+                        }
                     }
                 }
 
