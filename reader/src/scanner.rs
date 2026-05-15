@@ -36,17 +36,14 @@ async fn scan_directory_internal(
     existing_artists_by_dir: &HashMap<PathBuf, HashSet<String>>,
     on_progress: Arc<dyn Fn(String) + Send + Sync>,
 ) -> std::io::Result<HashSet<String>> {
-    let mut entries = match fs::read_dir(&dir).await {
-        Ok(e) => e,
-        Err(_) => return Ok(HashSet::new()),
-    };
+    let mut entries = fs::read_dir(&dir).await?;
 
     let mut audio_files = Vec::new();
     let mut sub_dirs = Vec::new();
     let mut artist_image = None;
     let mut artists_in_subtree = existing_artists_by_dir.get(&dir).cloned().unwrap_or_default();
 
-    while let Ok(Some(entry)) = entries.next_entry().await {
+    while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
         if path.is_dir() {
             sub_dirs.push(path);
@@ -99,20 +96,19 @@ async fn scan_directory_internal(
             existing_artists_by_dir,
             on_progress.clone(),
         )
-        .await;
+        .await?;
 
-        if let Ok(child_artists) = child_artists {
-            artists_in_subtree.extend(child_artists);
-        }
+        artists_in_subtree.extend(child_artists);
     }
 
-    if let Some(artist_image_path) = artist_image {
-        for artist in &artists_in_subtree {
-            library
-                .local_artist_images
-                .entry(artist.clone())
-                .or_insert_with(|| artist_image_path.clone());
-        }
+    if let Some(artist_image_path) = artist_image
+        && artists_in_subtree.len() == 1
+        && let Some(artist) = artists_in_subtree.iter().next()
+    {
+        library
+            .local_artist_images
+            .entry(artist.clone())
+            .or_insert_with(|| artist_image_path);
     }
 
     Ok(artists_in_subtree)

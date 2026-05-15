@@ -7,6 +7,10 @@ use reader::{Library, PlaylistStore};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
+fn normalize_artist_key(value: &str) -> String {
+    value.trim().to_lowercase()
+}
+
 #[component]
 pub fn LocalArtist(
     library: Signal<Library>,
@@ -42,11 +46,12 @@ pub fn LocalArtist(
     let local_artists = use_memo(move || {
         let lib = library.read();
         let use_artist_photo = config.read().artist_photo_source == ArtistPhotoSource::ArtistPhoto;
-        let mut artist_map: HashMap<String, Option<std::path::PathBuf>> = HashMap::new();
+        let mut artist_map: HashMap<String, (String, Option<std::path::PathBuf>)> =
+            HashMap::new();
         for album in &lib.albums {
             artist_map
-                .entry(album.artist.clone())
-                .or_insert_with(|| album.cover_path.clone());
+                .entry(normalize_artist_key(&album.artist))
+                .or_insert_with(|| (album.artist.clone(), album.cover_path.clone()));
         }
         for track in &lib.tracks {
             let cover = lib
@@ -56,16 +61,21 @@ pub fn LocalArtist(
                 .and_then(|a| a.cover_path.clone());
             for artist in &track.artists {
                 artist_map
-                    .entry(artist.clone())
-                    .or_insert_with(|| cover.clone());
+                    .entry(normalize_artist_key(artist))
+                    .or_insert_with(|| (artist.clone(), cover.clone()));
             }
         }
         if use_artist_photo {
             for (artist, image_path) in &lib.local_artist_images {
-                artist_map.insert(artist.clone(), Some(image_path.clone()));
+                let normalized = normalize_artist_key(artist);
+                let display_name = artist_map
+                    .get(&normalized)
+                    .map(|(display_name, _)| display_name.clone())
+                    .unwrap_or_else(|| artist.clone());
+                artist_map.insert(normalized, (display_name, Some(image_path.clone())));
             }
         }
-        let mut artists: Vec<_> = artist_map.into_iter().collect();
+        let mut artists: Vec<_> = artist_map.into_values().collect();
         artists.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
         artists
     });

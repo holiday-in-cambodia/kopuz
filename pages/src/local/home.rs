@@ -6,6 +6,10 @@ use reader::{Album, FavoritesStore, Library, PlaylistStore, Track};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+fn normalize_artist_key(value: &str) -> String {
+    value.trim().to_lowercase()
+}
+
 fn section_label(key: &str) -> String {
     let i18n_key = match key {
         "hero" => "home_section_hero",
@@ -93,13 +97,19 @@ pub fn LocalHome(
     let artists = use_memo(move || {
         let lib = library.read();
         let use_artist_photo = config.read().artist_photo_source == ArtistPhotoSource::ArtistPhoto;
+        let normalized_local_artist_images: HashMap<String, PathBuf> = lib
+            .local_artist_images
+            .iter()
+            .map(|(artist, path)| (normalize_artist_key(artist), path.clone()))
+            .collect();
         let mut unique_artists = std::collections::HashSet::new();
         let mut artist_list = Vec::new();
         for album in &lib.albums {
-            if unique_artists.insert(album.artist.clone()) {
+            let normalized_artist = normalize_artist_key(&album.artist);
+            if unique_artists.insert(normalized_artist.clone()) {
                 let cover = if use_artist_photo {
-                    lib.local_artist_images
-                        .get(&album.artist)
+                    normalized_local_artist_images
+                        .get(&normalized_artist)
                         .cloned()
                         .or_else(|| album.cover_path.clone())
                 } else {
@@ -113,7 +123,7 @@ pub fn LocalHome(
         }
         if use_artist_photo {
             for (artist, image_path) in &lib.local_artist_images {
-                if unique_artists.insert(artist.clone()) {
+                if unique_artists.insert(normalize_artist_key(artist)) {
                     artist_list.push((artist.clone(), Some(image_path.clone())));
                 }
                 if artist_list.len() >= 10 {
