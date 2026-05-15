@@ -25,6 +25,8 @@ add = Add
 add_folder = Add Folder
 no_music_folders = No music folders configured
 add_server = Add Server
+connect_to_lastfm = Connect to Last.fm
+lastfm_connected = Last.fm Connected
 server_details = Server Details
 server_name = Server Name
 server_url = Server URL
@@ -179,6 +181,8 @@ heart_track_to_add_server = Heart a track while it's playing to add it here and 
 search_placeholder = Search for artists, albums or tracks...
 no_results_found = No results found for "{ $query }"
 listenbrainz_token_placeholder = Enter your ListenBrainz token
+lastfm_api_key_placeholder = Enter your Last.fm API Key <!-- NEEDS LOCALIZATION -->
+lastfm_api_secret_placeholder = Enter your Last.fm API Secret <!-- NEEDS LOCALIZATION -->
 
 # Empty States
 album_not_found = Album not found
@@ -265,6 +269,7 @@ repeat_track = Repeat: Track
 rescan_library = Rescan Library
 refresh_music_library = Refresh Music Library
 listenbrainz = ListenBrainz
+lastfm = Last.fm
 album_art_gradient = Album art gradient
 default_theme = Default
 gruvbox_material = Gruvbox Material
