@@ -7,12 +7,25 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
 
+fn normalize_artist_key(value: &str) -> Option<String> {
+    let normalized = value.trim().to_lowercase();
+    if normalized.is_empty() {
+        None
+    } else {
+        Some(normalized)
+    }
+}
+
 pub async fn scan_directory(
     dir: PathBuf,
     cover_cache: PathBuf,
     library: &mut Library,
     on_progress: Arc<dyn Fn(String) + Send + Sync>,
 ) -> std::io::Result<()> {
+    library
+        .local_artist_images
+        .retain(|_, image_path| !image_path.starts_with(&dir));
+
     let existing_paths: HashSet<PathBuf> = library.tracks.iter().map(|t| t.path.clone()).collect();
     let existing_artists_by_dir = build_existing_artist_index(&library.tracks);
     scan_directory_internal(
@@ -68,11 +81,11 @@ async fn scan_directory_internal(
                     progress(name.to_string_lossy().into_owned());
                 }
                 if let Some(track) = read(&path, &cover_cache_clone, &mut lib) {
-                    if !track.artist.trim().is_empty() {
-                        scanned_artists.insert(track.artist);
+                    if let Some(artist) = normalize_artist_key(&track.artist) {
+                        scanned_artists.insert(artist);
                     }
                     for artist in track.artists {
-                        if !artist.trim().is_empty() {
+                        if let Some(artist) = normalize_artist_key(&artist) {
                             scanned_artists.insert(artist);
                         }
                     }
@@ -141,13 +154,13 @@ fn build_existing_artist_index(
 fn collect_track_artists(track: &super::models::Track) -> HashSet<String> {
     let mut artists = HashSet::new();
 
-    if !track.artist.trim().is_empty() {
-        artists.insert(track.artist.clone());
+    if let Some(artist) = normalize_artist_key(&track.artist) {
+        artists.insert(artist);
     }
 
     for artist in &track.artists {
-        if !artist.trim().is_empty() {
-            artists.insert(artist.clone());
+        if let Some(artist) = normalize_artist_key(artist) {
+            artists.insert(artist);
         }
     }
 
