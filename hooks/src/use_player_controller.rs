@@ -477,26 +477,8 @@ impl PlayerController {
 
                 if let Some((stream_url, cover_url)) = {
                     if is_radio_item {
-                        let stream_url = if id == "listen_moe" {
-                            if stream_id.contains("kpop") {
-                                "https://listen.moe/kpop/stream"
-                            } else {
-                                "https://listen.moe/stream"
-                            }
-                        } else if id == "j1" {
-                            if stream_id == "J1GOLD" {
-                                "https://jenny.torontocast.com:2000/stream/J1GOLD"
-                            } else {
-                                "https://jenny.torontocast.com:2000/stream/J1HITS"
-                            }
-                        } else if id == "doujinstyle" {
-                            "https://streams.radio.co/s5ff57669c/listen"
-                        } else if id == "vocaloid" {
-                            "https://vocaloid.radioca.st/stream"
-                        } else {
-                            ""
-                        }.to_string();
-                        Some((stream_url, String::new()))
+                        let stream_url = radio::stations::stream_url(&id, &stream_id);
+                        Some((stream_url.to_string(), String::new()))
                     } else {
                         let conf = self.config.read();
                     conf.server.as_ref().map(|server| match server.service {
@@ -665,60 +647,24 @@ impl PlayerController {
                                 }
 
                                 if is_radio_item {
-                                    #[cfg(not(target_arch = "wasm32"))]
                                     {
+                                        let provider: Box<dyn radio::RadioMetadataProvider> = match station_id.as_str() {
+                                            "listen_moe"  => Box::new(radio::listen_moe::ListenMoeProvider),
+                                            "j1"          => Box::new(radio::j1::J1Provider),
+                                            "doujinstyle" => Box::new(radio::doujinstyle::DoujinstyleProvider),
+                                            "vocaloid"    => Box::new(radio::vocaloid::VocaloidProvider),
+                                            _             => return,
+                                        };
+
                                         let task = spawn(async move {
-                                            use radio::RadioMetadataProvider;
-                                            if station_id == "listen_moe" {
-                                                let provider = radio::listen_moe::ListenMoeProvider;
-                                                let mut rx = provider.start(&stream_id);
-                                                while let Some(meta) = rx.recv().await {
-                                                    current_song_title.set(meta.title.clone());
-                                                    current_song_artist.set(meta.artist.clone());
-                                                    if let Some(cover) = meta.cover_url {
-                                                        current_song_cover_url.set(cover);
-                                                    } else {
-                                                        current_song_cover_url.set(String::new());
-                                                    }
-                                                }
-                                            } else if station_id == "j1" {
-                                                let provider = radio::j1::J1Provider;
-                                                let mut rx = provider.start(&stream_id);
-                                                while let Some(meta) = rx.recv().await {
-                                                    current_song_title.set(meta.title.clone());
-                                                    current_song_artist.set(meta.artist.clone());
-                                                    if let Some(cover) = meta.cover_url {
-                                                        current_song_cover_url.set(cover);
-                                                    } else {
-                                                        current_song_cover_url.set(String::new());
-                                                    }
-                                                }
-                                            } else if station_id == "doujinstyle" {
-                                                let provider = radio::doujinstyle::DoujinstyleProvider;
-                                                let mut rx = provider.start(&stream_id);
-                                                while let Some(meta) = rx.recv().await {
-                                                    current_song_title.set(meta.title.clone());
-                                                    current_song_artist.set(meta.artist.clone());
-                                                    if let Some(cover) = meta.cover_url {
-                                                        current_song_cover_url.set(cover);
-                                                    } else {
-                                                        current_song_cover_url.set(String::new());
-                                                    }
-                                                }
-                                            } else if station_id == "vocaloid" {
-                                                let provider = radio::vocaloid::VocaloidProvider;
-                                                let mut rx = provider.start(&stream_id);
-                                                while let Some(meta) = rx.recv().await {
-                                                    current_song_title.set(meta.title.clone());
-                                                    current_song_artist.set(meta.artist.clone());
-                                                    if let Some(cover) = meta.cover_url {
-                                                        current_song_cover_url.set(cover);
-                                                    } else {
-                                                        current_song_cover_url.set(String::new());
-                                                    }
-                                                }
+                                            let mut rx = provider.start(&stream_id);
+                                            while let Some(meta) = rx.recv().await {
+                                                current_song_title.set(meta.title.clone());
+                                                current_song_artist.set(meta.artist.clone());
+                                                current_song_cover_url.set(meta.cover_url.unwrap_or_default());
                                             }
                                         });
+
                                         radio_task.set(Some(task));
                                     }
                                 }

@@ -612,6 +612,7 @@ pub fn default_sidebar_order() -> Vec<String> {
         "artists".to_string(),
         "playlists".to_string(),
         "favorites".to_string(),
+        "radio".to_string(),
         "activity".to_string(),
         "ytdlp".to_string(),
     ]

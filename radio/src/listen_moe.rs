@@ -3,12 +3,49 @@ use tokio::sync::mpsc;
 
 pub struct ListenMoeProvider;
 
+fn parse_track_update(d: &serde_json::Value) -> Option<RadioMetadata> {
+    let song = d.get("song")?;
+
+    let title = song
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    let artist = song
+        .get("artists")
+        .and_then(|v| v.as_array())
+        .map(|artists| {
+            artists
+                .iter()
+                .filter_map(|a| a.get("name").and_then(|n| n.as_str()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_else(|| "Unknown Artist".to_string());
+
+    let cover_url = song
+        .get("albums")
+        .and_then(|v| v.as_array())
+        .and_then(|arr| arr.first())
+        .and_then(|album| album.get("image"))
+        .and_then(|img| img.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| format!("https://cdn.listen.moe/covers/{}", s));
+
+    Some(RadioMetadata {
+        title,
+        artist,
+        cover_url,
+    })
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 impl RadioMetadataProvider for ListenMoeProvider {
     fn start(&self, stream_id: &str) -> mpsc::UnboundedReceiver<RadioMetadata> {
         use futures_util::{SinkExt, StreamExt};
         use serde::Deserialize;
-        use tokio::time::{sleep, Duration};
+        use tokio::time::{Duration, sleep};
         use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
         #[derive(Deserialize)]
@@ -23,8 +60,8 @@ impl RadioMetadataProvider for ListenMoeProvider {
             "wss://listen.moe/kpop/gateway_v2"
         } else {
             "wss://listen.moe/gateway_v2"
-        };
-        let ws_url = ws_url.to_string();
+        }
+        .to_string();
 
         tokio::spawn(async move {
             loop {
@@ -41,6 +78,11 @@ impl RadioMetadataProvider for ListenMoeProvider {
                                 if let Some(d) = ws_msg.d {
                                     if let Some(hb) = d.get("heartbeat").and_then(|v| v.as_u64()) {
                                         heartbeat_interval = hb;
+                                    } else {
+                                        tracing::warn!(
+                                            "[radio] ListenMoeProvider: missing heartbeat in welcome message, defaulting to {}ms",
+                                            heartbeat_interval
+                                        );
                                     }
                                 }
                             }
@@ -52,68 +94,60 @@ impl RadioMetadataProvider for ListenMoeProvider {
                     let heartbeat_task = tokio::spawn(async move {
                         loop {
                             sleep(Duration::from_millis(heartbeat_interval)).await;
-                            if write.send(Message::Text("{\"op\":9}".to_string())).await.is_err() {
+                            if write
+                                .send(Message::Text("{\"op\":9}".to_string()))
+                                .await
+                                .is_err()
+                            {
                                 break;
                             }
                         }
                     });
 
-                    while let Some(Ok(Message::Text(msg))) = read.next().await {
+                    while let Some(Ok(msg)) = read.next().await {
                         if tx.is_closed() {
-                            tracing::info!("[radio] ListenMoeProvider: tx is closed! Exiting loop.");
+                            tracing::info!(
+                                "[radio] ListenMoeProvider: tx is closed, exiting read loop"
+                            );
                             break;
                         }
-                        if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&msg) {
-                            if ws_msg.op == 1 && ws_msg.t.as_deref() == Some("TRACK_UPDATE") {
-                                if let Some(d) = ws_msg.d {
-                                    if let Some(song) = d.get("song") {
-                                        let title = song.get("title").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string();
 
-                                        let artist = if let Some(artists) = song.get("artists").and_then(|v| v.as_array()) {
-                                            let names: Vec<&str> = artists.iter().filter_map(|a| a.get("name").and_then(|n| n.as_str())).collect();
-                                            names.join(", ")
-                                        } else {
-                                            "Unknown Artist".to_string()
-                                        };
-
-                                        let cover_url = song.get("albums")
-                                            .and_then(|v| v.as_array())
-                                            .and_then(|arr| arr.first())
-                                            .and_then(|album| album.get("image"))
-                                            .and_then(|img| img.as_str())
-                                            .filter(|s| !s.is_empty())
-                                            .map(|s| format!("https://cdn.listen.moe/covers/{}", s));
-
-                                        let meta = RadioMetadata {
-                                            title,
-                                            artist,
-                                            cover_url,
-                                        };
-                                        if tx.send(meta).is_err() {
-                                            tracing::warn!("[radio] ListenMoeProvider tx send error! Exiting loop.");
-                                            break;
+                        match msg {
+                            Message::Text(text) => {
+                                if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&text) {
+                                    if ws_msg.op == 1 && ws_msg.t.as_deref() == Some("TRACK_UPDATE")
+                                    {
+                                        if let Some(d) = ws_msg.d {
+                                            if let Some(meta) = parse_track_update(&d) {
+                                                if tx.send(meta).is_err() {
+                                                    tracing::warn!(
+                                                        "[radio] ListenMoeProvider: tx send error, exiting"
+                                                    );
+                                                    break;
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
+                            Message::Close(_) => {
+                                tracing::info!(
+                                    "[radio] ListenMoeProvider: server closed connection"
+                                );
+                                break;
+                            }
+                            _ => {}
                         }
                     }
 
                     heartbeat_task.abort();
+                    let _ = heartbeat_task.await;
                 }
 
                 sleep(Duration::from_secs(5)).await;
             }
         });
 
-        rx
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-impl RadioMetadataProvider for ListenMoeProvider {
-    fn start(&self, _stream_id: &str) -> mpsc::UnboundedReceiver<RadioMetadata> {
-        let (_tx, rx) = mpsc::unbounded_channel();
         rx
     }
 }
