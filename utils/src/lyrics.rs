@@ -1,5 +1,7 @@
 use percent_encoding::NON_ALPHANUMERIC;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
 
 #[derive(Debug, Deserialize)]
 struct LrcLibResponse {
@@ -20,6 +22,8 @@ pub enum Lyrics {
     Synced(Vec<LyricLine>),
     Plain(String),
 }
+
+static LYRICS_CACHE: OnceLock<Mutex<HashMap<String, Option<Lyrics>>>> = OnceLock::new();
 
 // --- Jellyfin lyrics types ---
 
@@ -115,6 +119,12 @@ pub async fn fetch_lyrics(
     server_token: Option<&str>,
     server_user_id: Option<&str>,
 ) -> Option<Lyrics> {
+    let cache_key = lyrics_cache_key(artist, title, album, duration, track_path);
+    if let Some(cached) = lyrics_cache().lock().ok().and_then(|cache| cache.get(&cache_key).cloned())
+    {
+        return cached;
+    }
+
     let is_server = track_path.starts_with("jellyfin:")
         || track_path.starts_with("subsonic:")
         || track_path.starts_with("custom:");
@@ -122,6 +132,9 @@ pub async fn fetch_lyrics(
     // 1. Local .lrc file (only for local tracks)
     if !is_server {
         if let Some(lyrics) = fetch_local_lrc(track_path).await {
+            if let Ok(mut cache) = lyrics_cache().lock() {
+                cache.insert(cache_key, Some(lyrics.clone()));
+            }
             return Some(lyrics);
         }
     }
@@ -133,6 +146,9 @@ pub async fn fetch_lyrics(
                 (extract_server_id(track_path, "jellyfin:"), server_token)
             {
                 if let Some(lyrics) = fetch_jellyfin_lyrics(&item_id, server_url, token).await {
+                    if let Ok(mut cache) = lyrics_cache().lock() {
+                        cache.insert(cache_key, Some(lyrics.clone()));
+                    }
                     return Some(lyrics);
                 }
             }
@@ -151,6 +167,9 @@ pub async fn fetch_lyrics(
                     fetch_subsonic_lyrics(&song_id, server_url, username, password, artist, title)
                         .await
                 {
+                    if let Ok(mut cache) = lyrics_cache().lock() {
+                        cache.insert(cache_key, Some(lyrics.clone()));
+                    }
                     return Some(lyrics);
                 }
             }
@@ -158,7 +177,49 @@ pub async fn fetch_lyrics(
     }
 
     // 3. lrclib fallback
-    fetch_from_lrclib(artist, title, album, duration).await
+    let fetched = fetch_from_lrclib(artist, title, album, duration).await;
+    if let Ok(mut cache) = lyrics_cache().lock() {
+        cache.insert(cache_key, fetched.clone());
+    }
+    fetched
+}
+
+pub fn cached_lyrics(
+    artist: &str,
+    title: &str,
+    album: &str,
+    duration: u64,
+    track_path: &str,
+) -> Option<Option<Lyrics>> {
+    let cache_key = lyrics_cache_key(artist, title, album, duration, track_path);
+    lyrics_cache()
+        .lock()
+        .ok()
+        .and_then(|cache| cache.get(&cache_key).cloned())
+}
+
+fn lyrics_cache() -> &'static Mutex<HashMap<String, Option<Lyrics>>> {
+    LYRICS_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn lyrics_cache_key(
+    artist: &str,
+    title: &str,
+    album: &str,
+    duration: u64,
+    track_path: &str,
+) -> String {
+    if !track_path.trim().is_empty() {
+        return track_path.trim().to_string();
+    }
+
+    format!(
+        "{}|{}|{}|{}",
+        artist.trim().to_lowercase(),
+        title.trim().to_lowercase(),
+        album.trim().to_lowercase(),
+        duration
+    )
 }
 
 fn extract_server_id(path: &str, prefix: &str) -> Option<String> {

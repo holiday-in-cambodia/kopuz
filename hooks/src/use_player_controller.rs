@@ -240,6 +240,19 @@ impl PlayerController {
         self.current_song_progress.set(seek_secs);
     }
 
+    pub fn displayed_progress_secs_f64(&self) -> f64 {
+        let pos = self.player.peek().get_position().as_secs_f64();
+
+        if let Some(pending) = self.pending_crossfade_ui.read().clone()
+            && pos < pending.switch_after_secs as f64
+        {
+            return (pending.outgoing_progress_secs as f64 + pos)
+                .min(pending.outgoing_duration_secs as f64);
+        }
+
+        pos
+    }
+
     /// Remap a queue index after moving one item within the queue.
     ///
     /// `index` is the position to remap, `from` is the original position of the moved item,
