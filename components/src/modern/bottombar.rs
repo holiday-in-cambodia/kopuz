@@ -232,6 +232,24 @@ pub fn BottombarModern(
                     }
                     div {
                         class: "w-20 h-[3px] bg-white/10 rounded-full group/vol cursor-pointer relative",
+                        onwheel: move |evt| {
+                            evt.stop_propagation();
+                            let dy = evt.delta().strip_units().y;
+                            if dy.abs() < f64::EPSILON {
+                                return;
+                            }
+                            let step = config.read().volume_scroll_step.max(0.0);
+                            let dir = if dy < 0.0 { 1.0 } else { -1.0 };
+                            let current = *volume.read();
+                            let new_val = (current + dir * step).clamp(0.0, 1.0);
+                            player.write().set_volume(new_val);
+                            volume.set(new_val);
+                            persisted_volume.set(new_val);
+                            is_muted.set(new_val <= f32::EPSILON);
+                            if new_val > f32::EPSILON {
+                                volume_before_mute.set(new_val);
+                            }
+                        },
                         div {
                             class: "absolute top-0 left-0 h-full bg-white/60 group-hover/vol:bg-white rounded-full transition-colors pointer-events-none",
                             style: "width: {volume_percent}%",

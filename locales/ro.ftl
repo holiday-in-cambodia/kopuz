@@ -376,3 +376,5 @@ auto_check_updates = Verifică automat actualizările
 update_available = Actualizare disponibilă
 update_banner_message = Kopuz { $version } este disponibil.
 view_release = Vezi lansarea
+
+volume_scroll_step = Pas de derulare a volumului

@@ -382,3 +382,5 @@ auto_check_updates = التحقق التلقائي من التحديثات
 update_available = تحديث متوفر
 update_banner_message = إصدار Kopuz { $version } متوفر.
 view_release = عرض الإصدار
+
+volume_scroll_step = خطوة تمرير الصوت

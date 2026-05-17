@@ -376,3 +376,5 @@ auto_check_updates = 自动检查更新
 update_available = 有可用更新
 update_banner_message = Kopuz { $version } 现已可用。
 view_release = 查看发行版
+
+volume_scroll_step = 音量滚动步长

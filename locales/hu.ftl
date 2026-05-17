@@ -376,3 +376,5 @@ auto_check_updates = Frissítések automatikus keresése
 update_available = Elérhető frissítés
 update_banner_message = A Kopuz { $version } elérhető.
 view_release = Kiadás megtekintése
+
+volume_scroll_step = Hangerő görgetési lépés

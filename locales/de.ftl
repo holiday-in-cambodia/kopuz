@@ -376,3 +376,5 @@ auto_check_updates = Automatisch nach Updates suchen
 update_available = Update verfügbar
 update_banner_message = Kopuz { $version } ist verfügbar.
 view_release = Release ansehen
+
+volume_scroll_step = Lautstärke-Scrollschritt

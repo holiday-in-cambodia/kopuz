@@ -376,3 +376,5 @@ auto_check_updates = Güncellemeleri otomatik denetle
 update_available = Güncelleme mevcut
 update_banner_message = Kopuz { $version } kullanılabilir.
 view_release = Sürümü görüntüle
+
+volume_scroll_step = Ses kaydırma adımı

@@ -376,3 +376,5 @@ auto_check_updates = Αυτόματος έλεγχος ενημερώσεων
 update_available = Διαθέσιμη ενημέρωση
 update_banner_message = Το Kopuz { $version } είναι διαθέσιμο.
 view_release = Προβολή έκδοσης
+
+volume_scroll_step = Βήμα κύλισης έντασης

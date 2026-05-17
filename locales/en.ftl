@@ -42,6 +42,7 @@ password = Password
 player_settings = Player Settings
 crossfade = Crossfade
 crossfade_off = Off
+volume_scroll_step = Volume Scroll Step
 channel_mode = Channel Mode
 channel_mode_stereo = Stereo
 channel_mode_mono = Mono

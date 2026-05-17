@@ -376,3 +376,5 @@ auto_check_updates = lukin pi sin namako lon tenpo ale
 update_available = sin namako li lon
 update_banner_message = Kopuz { $version } li lon.
 view_release = o lukin e lipu pi sin namako
+
+volume_scroll_step = nasin tawa kalama

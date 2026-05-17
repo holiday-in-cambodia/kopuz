@@ -375,3 +375,5 @@ auto_check_updates = Periksa pembaruan otomatis
 update_available = Pembaruan tersedia
 update_banner_message = Kopuz { $version } tersedia.
 view_release = Lihat rilis
+
+volume_scroll_step = Langkah Gulir Volume

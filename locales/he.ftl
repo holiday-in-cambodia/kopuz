@@ -376,3 +376,5 @@ auto_check_updates = בדיקה אוטומטית לעדכונים
 update_available = עדכון זמין
 update_banner_message = ‏Kopuz { $version } זמין.
 view_release = הצג גרסה
+
+volume_scroll_step = צעד גלילת עוצמה

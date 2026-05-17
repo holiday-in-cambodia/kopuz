@@ -376,3 +376,5 @@ auto_check_updates = 업데이트 자동 확인
 update_available = 업데이트가 있습니다
 update_banner_message = Kopuz { $version }을(를) 사용할 수 있습니다.
 view_release = 릴리스 보기
+
+volume_scroll_step = 볼륨 스크롤 단계
