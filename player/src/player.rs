@@ -1145,8 +1145,9 @@ impl Player {
     }
 
     pub fn set_volume(&mut self, volume: f32) {
+        let gain = volume.clamp(0.0, 1.0).powi(3);
         let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        st.volume = volume;
+        st.volume = gain;
     }
 
     pub fn set_channel_mode(&mut self, mode: ChannelMode) {
@@ -1391,8 +1392,9 @@ impl Player {
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume;
-        self.audio.set_volume(volume as f64);
+        let gain = volume.clamp(0.0, 1.0).powi(3);
+        self.volume = gain;
+        self.audio.set_volume(gain as f64);
     }
 
     pub fn set_channel_mode(&mut self, mode: ChannelMode) {
