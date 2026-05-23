@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::constants::{COLUMNS_NORMAL, COLUMNS_NORMAL_ALBUM};
 use crate::header::Header;
 use crate::reorder_buttons::ReorderButtons;
-use crate::showcase::{self, ShowcaseProps, SortField};
+use crate::showcase::{self, ShowcaseProps};
 use crate::track_row::TrackRow;
 use config::{AppConfig, MusicService, MusicSource};
 use dioxus::prelude::*;

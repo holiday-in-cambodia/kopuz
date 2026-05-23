@@ -27,10 +27,21 @@ fn remove_stale_cover_variants(album_id: &str, cache_dir: &Path, keep_path: &Pat
 }
 
 pub fn find_folder_cover(dir: &Path) -> Option<PathBuf> {
-    let candidates = ["cover", "folder", "album"];
+    let candidates = [
+        "cover",
+        "folder",
+        "album",
+        "thumbnail",
+        "default",
+        "hqdefault",
+        "maxresdefault",
+        "preview",
+    ];
     let extensions = ["jpg", "jpeg", "png", "webp"];
 
     let entries = std::fs::read_dir(dir).ok()?;
+    let mut fallback_image = None;
+
     for entry in entries.flatten() {
         let path = entry.path();
         if !path.is_file() {
@@ -43,13 +54,16 @@ pub fn find_folder_cover(dir: &Path) -> Option<PathBuf> {
             continue;
         };
 
-        if candidates.iter().any(|c| c.eq_ignore_ascii_case(stem))
-            && extensions.iter().any(|e| e.eq_ignore_ascii_case(ext))
-        {
-            return Some(path);
+        if extensions.iter().any(|e| e.eq_ignore_ascii_case(ext)) {
+            if candidates.iter().any(|c| c.eq_ignore_ascii_case(stem)) {
+                return Some(path);
+            }
+            if fallback_image.is_none() {
+                fallback_image = Some(path);
+            }
         }
     }
-    None
+    fallback_image
 }
 
 pub fn is_artist_image_file(path: &Path) -> bool {
@@ -77,4 +91,50 @@ pub fn save_cover(
     remove_stale_cover_variants(album_id, cache_dir, &path);
     fs::write(&path, data)?;
     Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+
+    #[test]
+    fn test_find_folder_cover() {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir_path = std::env::temp_dir().join(format!("kopuz_test_dir_{nanos}"));
+        std::fs::create_dir_all(&dir_path).unwrap();
+
+        // 1. Empty directory
+        assert!(find_folder_cover(&dir_path).is_none());
+
+        // 2. Directory with only non-image files
+        File::create(dir_path.join("song.mp3")).unwrap();
+        File::create(dir_path.join("readme.txt")).unwrap();
+        assert!(find_folder_cover(&dir_path).is_none());
+
+        // 3. Directory with generic/fallback image
+        let random_image = dir_path.join("random_picture.jpg");
+        File::create(&random_image).unwrap();
+        assert_eq!(find_folder_cover(&dir_path), Some(random_image.clone()));
+
+        // 4. Directory with high-priority candidate image
+        let cover_image = dir_path.join("cover.png");
+        File::create(&cover_image).unwrap();
+        // Should prefer "cover.png" over "random_picture.jpg"
+        assert_eq!(find_folder_cover(&dir_path), Some(cover_image.clone()));
+
+        // 5. Directory with other candidate (e.g. hqdefault)
+        // Clean up and recreate with hqdefault
+        std::fs::remove_file(cover_image).unwrap();
+        std::fs::remove_file(random_image).unwrap();
+        let hq_image = dir_path.join("hqdefault.webp");
+        File::create(&hq_image).unwrap();
+        assert_eq!(find_folder_cover(&dir_path), Some(hq_image));
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&dir_path);
+    }
 }

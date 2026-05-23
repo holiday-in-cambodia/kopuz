@@ -64,8 +64,8 @@ pub fn PlaylistDetail(
                 let pid_clone = pid.clone();
                 spawn(async move {
                     let conf = config.peek();
-                    if let Some(server) = &conf.server {
-                        if let (Some(token), Some(user_id)) =
+                    if let Some(server) = &conf.server
+                        && let (Some(token), Some(user_id)) =
                             (&server.access_token, &server.user_id)
                         {
                             match server.service {
@@ -82,11 +82,10 @@ pub fn PlaylistDetail(
                                             let duration_secs =
                                                 item.run_time_ticks.unwrap_or(0) / 10_000_000;
                                             let mut path_str = format!("jellyfin:{}", item.id);
-                                            if let Some(tags) = &item.image_tags {
-                                                if let Some(tag) = tags.get("Primary") {
+                                            if let Some(tags) = &item.image_tags
+                                                && let Some(tag) = tags.get("Primary") {
                                                     path_str.push_str(&format!(":{}", tag));
                                                 }
-                                            }
                                             let bitrate_kbps = item.bitrate.unwrap_or(0) / 1000;
                                             let bitrate_u16 =
                                                 bitrate_kbps.min(u16::MAX as u32) as u16;
@@ -191,7 +190,6 @@ pub fn PlaylistDetail(
                                 }
                             }
                         }
-                    }
                 });
             }
         });
@@ -272,12 +270,11 @@ pub fn PlaylistDetail(
                             let path = file.path().to_path_buf();
                             if is_jellyfin {
                                 let conf = config.peek();
-                                if let Some(server) = &conf.server {
-                                    if let (Some(token), Some(user_id)) =
+                                if let Some(server) = &conf.server
+                                    && let (Some(token), Some(user_id)) =
                                         (&server.access_token, &server.user_id)
-                                    {
-                                        if server.service == MusicService::Jellyfin {
-                                            if let Ok(bytes) = std::fs::read(&path) {
+                                        && server.service == MusicService::Jellyfin
+                                            && let Ok(bytes) = std::fs::read(&path) {
                                                 let ext = path
                                                     .extension()
                                                     .and_then(|e| e.to_str())
@@ -294,9 +291,6 @@ pub fn PlaylistDetail(
                                                 let _ =
                                                     remote.set_playlist_image(&pid, bytes, ct).await;
                                             }
-                                        }
-                                    }
-                                }
                                 let mut store = playlist_store.write();
                                 if let Some(p) =
                                     store.jellyfin_playlists.iter_mut().find(|p| p.id == pid)
@@ -314,8 +308,8 @@ pub fn PlaylistDetail(
                 }
             },
             on_delete_track: move |idx: usize| {
-                if !is_jellyfin {
-                    if let Some(t) = tracks.read().get(idx).cloned() {
+                if !is_jellyfin
+                    && let Some(t) = tracks.read().get(idx).cloned() {
                         #[cfg(not(target_arch = "wasm32"))]
                         if std::fs::remove_file(&t.path).is_ok() {
                             library.write().remove_track(&t.path);
@@ -325,7 +319,6 @@ pub fn PlaylistDetail(
                             let _ = library.read().save(&lib_path);
                         }
                     }
-                }
             },
             on_selection_delete: move |paths: Vec<PathBuf>| {
                 if !is_jellyfin {
@@ -352,8 +345,8 @@ pub fn PlaylistDetail(
                         let remove_idx = idx;
                         spawn(async move {
                             let conf = config.peek();
-                            if let Some(server) = &conf.server {
-                                if let (Some(token), Some(user_id)) =
+                            if let Some(server) = &conf.server
+                                && let (Some(token), Some(user_id)) =
                                     (&server.access_token, &server.user_id)
                                 {
                                     let removed = match server.service {
@@ -392,7 +385,6 @@ pub fn PlaylistDetail(
                                         }
                                     }
                                 }
-                            }
                         });
                     }
                 }
@@ -413,8 +405,8 @@ pub fn PlaylistDetail(
                     let pid = pid_for_move_up.clone();
                     spawn(async move {
                         let conf = config.peek();
-                        if let Some(server) = &conf.server {
-                            if let (Some(token), Some(user_id)) =
+                        if let Some(server) = &conf.server
+                            && let (Some(token), Some(user_id)) =
                                 (&server.access_token, &server.user_id)
                             {
                                 let moved_item =
@@ -459,7 +451,6 @@ pub fn PlaylistDetail(
                                     }
                                 }
                             }
-                        }
                     });
                 }
             },
@@ -479,8 +470,8 @@ pub fn PlaylistDetail(
                     let pid = pid_for_move_down.clone();
                     spawn(async move {
                         let conf = config.peek();
-                        if let Some(server) = &conf.server {
-                            if let (Some(token), Some(user_id)) =
+                        if let Some(server) = &conf.server
+                            && let (Some(token), Some(user_id)) =
                                 (&server.access_token, &server.user_id)
                             {
                                 let moved_item =
@@ -525,7 +516,6 @@ pub fn PlaylistDetail(
                                     }
                                 }
                             }
-                        }
                     });
                 }
             },

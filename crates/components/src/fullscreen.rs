@@ -529,6 +529,7 @@ pub fn Fullscreen(
                     lyrics,
                     current_song_progress
                 }
+                }
             }
         }
     }

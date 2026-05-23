@@ -1,6 +1,5 @@
-use crate::constants::{COLUMNS_MODERN, COLUMNS_NORMAL};
 use crate::header::Header;
-use crate::showcase::{self, SortField};
+use crate::showcase::{self};
 use crate::track_row::TrackRow;
 use config::{AppConfig, UiStyle};
 use dioxus::prelude::*;
@@ -83,7 +82,7 @@ pub fn SearchResults(
                                 };
                                 let is_downloaded = item_id
                                     .as_ref()
-                                    .map_or(false, |id| {
+                                    .is_some_and(|id| {
                                         if let Some(path_str) = offline_tracks.get(id) {
                                             std::path::Path::new(path_str).exists()
                                         } else {

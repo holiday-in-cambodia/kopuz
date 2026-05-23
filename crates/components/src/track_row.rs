@@ -10,6 +10,7 @@ use dioxus::prelude::*;
 use hooks::PlayerController;
 use reader::models::Track;
 
+
 #[component]
 pub fn TrackRow(
     track: Track,
@@ -269,18 +270,18 @@ pub fn TrackRow(
 
                 div { class: "flex items-center min-w-0 pr-3 gap-2",
                     if !is_album {
-                        div { class: "w-8 h-8 rounded bg-white/5 overflow-hidden shrink-0 flex items-center justify-center",
-                              if let Some(ref url) = cover_url {
-                                  img {
-                                      src: "{url.as_ref()}",
-                                      class: "w-full h-full object-cover",
-                                      loading: "lazy",
-                                      decoding: "async",
-                                  }
-                              } else {
-                                  i { class: "fa-solid fa-music", style: "color: var(--color-white); opacity: 0.2; font-size: 10px;" }
-                              }
-                       }
+                        div {
+                            class: "w-8 h-8 rounded overflow-hidden shrink-0",
+                            style: "background: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27400%27 height=%27400%27 viewBox=%270 0 400 400%27%3E%3Crect width=%27400%27 height=%27400%27 fill=%27%231e1b2e%27/%3E%3Ccircle cx=%27200%27 cy=%27180%27 r=%2770%27 fill=%27none%27 stroke=%27%233d3466%27 stroke-width=%276%27/%3E%3Cpath d=%27M155 280 Q200 240 245 280%27 fill=%27none%27 stroke=%27%233d3466%27 stroke-width=%276%27 stroke-linecap=%27round%27/%3E%3C/svg%3E') center/cover no-repeat, rgba(255,255,255,0.05);",
+                            if let Some(ref url) = cover_url {
+                                img {
+                                    src: "{url.as_ref()}",
+                                    class: "w-full h-full object-cover",
+                                    loading: "lazy",
+                                    decoding: "async",
+                                }
+                            }
+                        }
                     }
                     span {
                         class: "text-sm font-medium truncate cursor-pointer hover:underline",
@@ -377,7 +378,6 @@ pub fn TrackRow(
                                         if let Some(handler) = on_queue { handler.call(()); }
                                         return;
                                     }
-                                }
                                 if idx == add_to_playlist_idx {
                                     on_add_to_playlist.call(());
                                 } else if remove_action_idx == Some(idx) {
@@ -612,7 +612,6 @@ pub fn TrackRow(
                                     }
                                     return;
                                 }
-                            }
 
                             if idx == add_to_playlist_idx {
                                 on_add_to_playlist.call(());

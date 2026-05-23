@@ -49,11 +49,10 @@ fn init_bg_channel() {
 }
 
 fn send_bg_cmd(cmd: BgCmd) {
-    if let Some(lock) = BG_CMD_TX.get() {
-        if let Ok(tx) = lock.lock() {
+    if let Some(lock) = BG_CMD_TX.get()
+        && let Ok(tx) = lock.lock() {
             let _ = tx.send(cmd);
         }
-    }
     // Instantly wake the tokio task so it processes the command
     // without waiting for the next 250ms poll tick.
     if let Some(notify) = BG_NOTIFY.get() {
@@ -63,13 +62,12 @@ fn send_bg_cmd(cmd: BgCmd) {
 
 fn drain_bg_cmds() -> Vec<BgCmd> {
     let mut cmds = Vec::new();
-    if let Some(lock) = BG_CMD_RX.get() {
-        if let Ok(rx) = lock.try_lock() {
+    if let Some(lock) = BG_CMD_RX.get()
+        && let Ok(rx) = lock.try_lock() {
             while let Ok(cmd) = rx.try_recv() {
                 cmds.push(cmd);
             }
         }
-    }
     cmds
 }
 
@@ -244,8 +242,8 @@ pub fn use_player_task(ctrl: PlayerController) {
                         ctrl.get_track_at(idx)
                             .map(|t| t.path.to_string_lossy().to_string())
                     };
-                    if let Some(path) = current_path {
-                        if is_playing && last_recent_path.as_ref() != Some(&path) {
+                    if let Some(path) = current_path
+                        && is_playing && last_recent_path.as_ref() != Some(&path) {
                             last_recent_path = Some(path.clone());
                             let is_server =
                                 path.starts_with("jellyfin:") || path.starts_with("subsonic:");
@@ -256,7 +254,6 @@ pub fn use_player_task(ctrl: PlayerController) {
                             };
                             config.write().push_recent(id, is_server);
                         }
-                    }
                 }
 
                 let lyrics_prefetch = {
@@ -325,8 +322,8 @@ pub fn use_player_task(ctrl: PlayerController) {
                     conf.server.clone().map(|s| (s, conf.device_id.clone()))
                 };
 
-                if let Some((server, device_id)) = jellyfin_info {
-                    if server.service == MusicService::Jellyfin {
+                if let Some((server, device_id)) = jellyfin_info
+                    && server.service == MusicService::Jellyfin {
                         let key = JellyfinCacheKey {
                             url: server.url.clone(),
                             access_token: server.access_token,
@@ -430,7 +427,6 @@ pub fn use_player_task(ctrl: PlayerController) {
                             });
                         }
                     }
-                }
 
                 #[cfg(target_os = "macos")]
                 if last_now_playing_refresh.elapsed().as_secs() >= 10 {
@@ -575,7 +571,7 @@ pub fn use_player_task(ctrl: PlayerController) {
                         }
                         {
                             let mut config_write = config.write();
-                            let q = ctrl.queue.peek();
+                            let _q = ctrl.queue.peek();
                             let idx = *ctrl.current_queue_index.peek();
                             if let Some(track) = ctrl.get_track_at(idx) {
                                 let track_id = track.path.to_string_lossy().to_string();

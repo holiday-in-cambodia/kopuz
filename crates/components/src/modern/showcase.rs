@@ -5,7 +5,7 @@ use hooks::use_player_controller::PlayerController;
 use crate::NavigationController;
 use crate::constants::{COLUMNS_MODERN, COLUMNS_MODERN_ALBUM};
 use crate::header::Header;
-use crate::showcase::{self, ShowcaseProps, SortField};
+use crate::showcase::{self, ShowcaseProps};
 use crate::track_row::TrackRow;
 use std::collections::HashSet;
 
@@ -13,7 +13,7 @@ use std::collections::HashSet;
 pub fn ShowcaseModern(props: ShowcaseProps) -> Element {
     let mut ctrl = use_context::<PlayerController>();
     let config = use_context::<Signal<AppConfig>>();
-    let nav_ctrl = use_context::<NavigationController>();
+    let _nav_ctrl = use_context::<NavigationController>();
 
     let total_seconds: u64 = props.tracks.iter().map(|t| t.duration).sum();
     let duration_min = total_seconds / 60;
@@ -192,16 +192,16 @@ pub fn ShowcaseModern(props: ShowcaseProps) -> Element {
                             && track.duration == current_song_duration;
                         let is_currently_playing: bool = matches_current_path || matches_current_metadata;
                         let is_selected = props.is_selection_mode && props.selected_tracks.contains(&track.path);
-                        let selection_shadow = if is_selected {
+                        let _selection_shadow = if is_selected {
                             "inset 0 0 0 9999px color: var(--color-white); opacity: 0.07;"
                         } else {
                             "none"
                         };
-                        let track_dur = fmt_dur(track.duration);
-                        let artist = track.artist.clone();
-                        let album = track.album.clone();
-                        let album_id = track.album_id.clone();
-                        let row_num = display_idx + 1;
+                        let _track_dur = fmt_dur(track.duration);
+                        let _artist = track.artist.clone();
+                        let _album = track.album.clone();
+                        let _album_id = track.album_id.clone();
+                        let _row_num = display_idx + 1;
 
 
                         let path_str = track.path.to_string_lossy();
@@ -213,13 +213,13 @@ pub fn ShowcaseModern(props: ShowcaseProps) -> Element {
                         };
                         let is_downloading = false;
                         let play_queue = sorted_tracks.clone();
-                        let play_queue_button = sorted_tracks.clone();
+                        let _play_queue_button = sorted_tracks.clone();
 
                         let cover_url: Option<utils::CoverUrl> = {
                             let path_str = track.path.to_string_lossy();
                             if path_str.starts_with("jellyfin:") {
                                 let conf = config.read();
-                                conf.server.as_ref().and_then(|s| {
+                                let url = conf.server.as_ref().and_then(|s| {
                                     utils::jellyfin_image::track_cover_url_with_album_fallback(
                                         &path_str,
                                         &track.album_id,
@@ -227,14 +227,16 @@ pub fn ShowcaseModern(props: ShowcaseProps) -> Element {
                                         s.access_token.as_deref(),
                                         64,
                                         90,
-                                    ).map(|u| std::sync::Arc::from(u.as_str()))
-                                })
+                                    )
+                                });
+                                Some(url.map_or_else(utils::default_cover_url, |u| std::sync::Arc::from(u.as_str())))
                             } else {
                                 let lib = props.library.read();
                                 lib.albums
                                     .iter()
                                     .find(|a| a.id == track.album_id)
                                     .and_then(|a| utils::format_artwork_url(a.cover_path.as_ref()))
+                                    .or_else(|| Some(utils::default_cover_url()))
                             }
                         };
 

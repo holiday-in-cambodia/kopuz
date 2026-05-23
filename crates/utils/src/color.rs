@@ -49,8 +49,8 @@ pub async fn get_palette_from_url(url: &str) -> Option<Vec<Color>> {
 }
 
 pub fn get_background_style(colors: Option<&[Color]>) -> String {
-    if let Some(colors) = colors {
-        if !colors.is_empty() {
+    if let Some(colors) = colors
+        && !colors.is_empty() {
             let bg_color = &colors[0];
             let mut bg_image_parts = Vec::new();
             let positions = [
@@ -85,6 +85,5 @@ pub fn get_background_style(colors: Option<&[Color]>) -> String {
                 );
             }
         }
-    }
     "background-color: var(--color-black); background-image: none;".to_string()
 }

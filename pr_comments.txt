@@ -1,0 +1,838 @@
+author:	coderabbitai
+association:	contributor
+edited:	true
+status:	none
+--
+<!-- This is an auto-generated comment: summarize by coderabbit.ai -->
+<!-- This is an auto-generated comment: review paused by coderabbit.ai -->
+
+> [!NOTE]
+> ## Reviews paused
+> 
+> It looks like this branch is under active development. To avoid overwhelming you with review comments due to an influx of new commits, CodeRabbit has automatically paused this review. You can configure this behavior by changing the `reviews.auto_review.auto_pause_after_reviewed_commits` setting.
+> 
+> Use the following commands to manage reviews:
+> - `@coderabbitai resume` to resume automatic reviews.
+> - `@coderabbitai review` to trigger a single review.
+> 
+> Use the checkboxes below for quick actions:
+> - [ ] <!-- {"checkboxId": "7f6cc2e2-2e4e-497a-8c31-c9e4573e93d1"} --> ▶️ Resume reviews
+> - [ ] <!-- {"checkboxId": "e9bb8d72-00e8-4f67-9cb2-caf3b22574fe"} --> 🔍 Trigger review
+
+<!-- end of auto-generated comment: review paused by coderabbit.ai -->
+<!-- walkthrough_start -->
+
+<details>
+<summary>📝 Walkthrough</summary>
+
+## Walkthrough
+
+Adds automatic cover fetching (MusicBrainz/Last.fm) with configurable strategy, preserves manual uploads via Album.manual_cover, wires a non-wasm CoverFetcher into the scanner, exposes AppConfig flags, adjusts server sync merge/persistence, and adds a desktop UI handler for manual cover uploads.
+
+## Changes
+
+**Album Cover Auto-Fetch and Manual Upload Feature**
+
+|Layer / File(s)|Summary|
+|---|---|
+|**Data Model & Configuration Contracts** <br> `crates/reader/src/models.rs`, `crates/reader/src/metadata.rs`, `crates/config/src/lib.rs`|Adds `Album.manual_cover: bool` with `#[serde(default)]`, updates `Library::add_album` merge logic to respect `manual_cover`, initializes `manual_cover = false` in album construction paths, and introduces `FetchStrategy` plus `AppConfig` fields (`auto_fetch_covers`, `cover_fetch_strategy`).|
+|**Server Sync Merge & Persistence** <br> `crates/pages/src/server/subsonic_sync.rs`|Adds `normalize_album_id`, sets `manual_cover=false` for constructed server albums, changes Jellyfin/Subsonic/custom sync write-back to per-album merge preserving prior `cover_path`/`manual_cover`, and adds tracing progress logs.|
+|**Cover Fetcher Module Implementation** <br> `crates/reader/Cargo.toml`, `crates/reader/src/lib.rs`, `crates/reader/src/cover_fetcher.rs`|New non-wasm `cover_fetcher` module: `CoverFetcher` with reqwest client, cache dir, FetchStrategy/Last.fm key, MusicBrainz and Last.fm backends, 1100ms rate limiting, image download and `save_cover`, and `FetchReport`. Adds workspace deps and cfg gating.|
+|**Scanner Integration & Wiring** <br> `crates/reader/src/scanner.rs`|Extends `scan_directory` signature with `auto_fetch_covers`, `fetch_strategy`, `lastfm_api_key`; optionally constructs `CoverFetcher` after scanning and awaits `fetch_missing_covers`, logging found/missing/errors.|
+|**Application Configuration Binding** <br> `crates/kopuz/src/main.rs`|Rescan code derives cover-fetch settings from `AppConfig` (auto-fetch flag, fetch strategy, Last.fm key) and passes them to `reader::scan_directory`.|
+|**Desktop Manual Cover Upload** <br> `crates/components/src/album_details.rs`|Adds desktop-only `on_cover_click` handler that opens image picker, reads file bytes, saves cover via `reader::utils::save_cover` into cover cache, updates album `cover_path` and sets `manual_cover = true`, and persists `library.json` with rollback on failure.|
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+  participant App
+  participant AppConfig
+  participant Scanner
+  participant CoverFetcher
+  participant MusicBrainz
+  participant LastFm
+  participant Library
+  App->>AppConfig: read auto_fetch_covers, cover_fetch_strategy, lastfm_api_key
+  App->>Scanner: scan_directory(dir, cache_dir, ..., auto_fetch_covers, cover_fetch_strategy, lastfm_api_key)
+  Scanner->>Scanner: scan for audio files, build Library
+  alt auto_fetch_covers enabled
+    Scanner->>CoverFetcher: new(cache_dir, strategy, api_key, progress_cb)
+    CoverFetcher->>Library: iterate albums with cover_path == None (skip Unknown Album/manual_cover)
+    loop per missing album
+      CoverFetcher->>CoverFetcher: choose backend by FetchStrategy
+      alt MusicBrainz path
+        CoverFetcher->>MusicBrainz: search/resolve release_id, request Cover Art Archive
+        MusicBrainz-->>CoverFetcher: image metadata
+      else LastFm path
+        CoverFetcher->>LastFm: album.getinfo(api_key)
+        LastFm-->>CoverFetcher: image URLs
+      end
+      CoverFetcher->>CoverFetcher: download selected image bytes
+      CoverFetcher->>Library: save_cover, update album.cover_path and manual_cover
+    end
+    CoverFetcher-->>Scanner: FetchReport { found, missing, errors }
+    Scanner->>Scanner: log results
+  end
+  Scanner-->>App: scan complete
+```
+
+## Estimated code review effort
+
+🎯 4 (Complex) | ⏱️ ~45 minutes
+
+## Possibly related issues
+
+- Kopuz-org/kopuz#271: Implements the auto-fetch/manual-cover feature requested in this issue (cover_fetcher, scanner wiring, AppConfig fields, Album.manual_cover).
+
+## Possibly related PRs
+
+- [Kopuz-org/kopuz#205](https://github.com/Kopuz-org/kopuz/pull/205): Modifies `reader::scanner::scan_directory`; changes likely overlap with scanner wiring.  
+- [Kopuz-org/kopuz#206](https://github.com/Kopuz-org/kopuz/pull/206): Related AppConfig Last.fm credential changes that interact with the new Last.fm wiring.  
+- [Kopuz-org/kopuz#209](https://github.com/Kopuz-org/kopuz/pull/209): Alters post-scan artwork handling and may overlap with cover persistence logic.
+
+## Suggested labels
+
+`enhancement`
+
+## Suggested reviewers
+
+- temidaradev
+- Irilith
+
+> "I hopped and found a cover bright,  
+> MusicBrainz hummed through the night,  
+> Last.fm shared an artful clue,  
+> Albums now wear artwork new,  
+> A rabbit saved the picture right." 🐰🎶
+
+</details>
+
+<!-- walkthrough_end -->
+<!-- pre_merge_checks_walkthrough_start -->
+
+<details>
+<summary>🚥 Pre-merge checks | ✅ 4 | ❌ 1</summary>
+
+### ❌ Failed checks (1 warning)
+
+|     Check name     | Status     | Explanation                                                                           | Resolution                                                                         |
+| :----------------: | :--------- | :------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- |
+| Docstring Coverage | ⚠️ Warning | Docstring coverage is 10.53% which is insufficient. The required threshold is 80.00%. | Write docstrings for the functions missing them to satisfy the coverage threshold. |
+
+<details>
+<summary>✅ Passed checks (4 passed)</summary>
+
+|         Check name         | Status   | Explanation                                                                                                                                                         |
+| :------------------------: | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|      Description Check     | ✅ Passed | Check skipped - CodeRabbit’s high-level summary is enabled.                                                                                                         |
+|         Title check        | ✅ Passed | The title accurately and specifically describes the main feature being implemented: automatic cover fetching from MusicBrainz and Last.fm for missing album covers. |
+|     Linked Issues check    | ✅ Passed | Check skipped because no linked issues were found for this pull request.                                                                                            |
+| Out of Scope Changes check | ✅ Passed | Check skipped because no linked issues were found for this pull request.                                                                                            |
+
+</details>
+
+<sub>✏️ Tip: You can configure your own custom pre-merge checks in the settings.</sub>
+
+</details>
+
+<!-- pre_merge_checks_walkthrough_end -->
+<!-- finishing_touch_checkbox_start -->
+
+<details>
+<summary>✨ Finishing Touches</summary>
+
+<details>
+<summary>🧪 Generate unit tests (beta)</summary>
+
+- [ ] <!-- {"checkboxId": "f47ac10b-58cc-4372-a567-0e02b2c3d479", "radioGroupId": "utg-output-choice-group-unknown_comment_id"} -->   Create PR with unit tests
+
+</details>
+
+</details>
+
+<!-- finishing_touch_checkbox_end -->
+<!-- tips_start -->
+
+---
+
+
+
+
+<sub>Comment `@coderabbitai help` to get the list of available commands and usage tips.</sub>
+
+<!-- tips_end -->
+<!-- internal state start -->
+
+
+<!-- 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= -->
+
+<!-- internal state end -->
+--
+author:	coderabbitai
+association:	contributor
+edited:	false
+status:	commented
+--
+**Actionable comments posted: 3**
+
+<details>
+<summary>🤖 Prompt for all review comments with AI agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+Inline comments:
+In `@crates/components/src/album_details.rs`:
+- Around line 63-80: The code currently writes the cover file
+(reader::utils::save_cover), mutates the in-memory album (library.write() ->
+lib.albums -> album.cover_path = Some(saved); album.manual_cover = true) and
+then drops the result of library.read().save(&lib_path), losing failures
+silently; update this flow so that after save_cover and after mutating the album
+you call library.read().save(&lib_path) and check its Result: on Ok keep the
+mutation; on Err log or return the error (surface it to the caller/UI) and roll
+back both the in-memory mutation (reset album.cover_path and album.manual_cover
+to their previous values) and the persisted cache (delete the saved cover file
+at saved) to avoid orphaned files, using the same identifiers
+(reader::utils::save_cover, saved,
+library.write()/lib.albums/album.cover_path/album.manual_cover,
+library.read().save, cover_cache, lib_path) to locate the spots to implement the
+error handling and rollback.
+
+In `@crates/reader/src/cover_fetcher.rs`:
+- Around line 138-149: The CoverArchiveImage struct and selection logic assume a
+string "type" field but the API uses a boolean "front" and a "types" array;
+update the CoverArchiveImage definition (used when deserializing
+CoverArchiveResponse from resp.json()) to include front: Option<bool> and types:
+Option<Vec<String>> (retain image: String) with appropriate serde field names,
+then change the selection logic on body.images to first prefer images where
+front == Some(true) or where types contains "Front" (e.g., i.front == Some(true)
+|| i.types.as_ref().map_or(false, |ts| ts.contains(&"Front".to_string()))), and
+fall back to body.images.first() if none match.
+- Line 199: The Last.fm API call uses plaintext HTTP in the .get call; update
+the request URL to use HTTPS by changing the string in the
+.get("http://ws.audioscrobbler.com/2.0/") call to
+"https://ws.audioscrobbler.com/2.0/". Also search the CoverFetcher code (e.g.,
+methods in cover_fetcher.rs that build the request) for any other
+"http://ws.audioscrobbler.com" occurrences and replace them with the HTTPS
+endpoint to ensure the API key and responses are transmitted securely.
+```
+
+</details>
+
+<details>
+<summary>🪄 Autofix (Beta)</summary>
+
+Fix all unresolved CodeRabbit comments on this PR:
+
+- [ ] <!-- {"checkboxId": "4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --> Push a commit to this branch (recommended)
+- [ ] <!-- {"checkboxId": "ff5b1114-7d8c-49e6-8ac1-43f82af23a33"} --> Create a new PR with the fixes
+
+</details>
+
+---
+
+<details>
+<summary>ℹ️ Review info</summary>
+
+<details>
+<summary>⚙️ Run configuration</summary>
+
+**Configuration used**: defaults
+
+**Review profile**: CHILL
+
+**Plan**: Pro Plus
+
+**Run ID**: `9fc96b54-5788-4ffe-8f3c-53e348b52f03`
+
+</details>
+
+<details>
+<summary>📥 Commits</summary>
+
+Reviewing files that changed from the base of the PR and between 6b310bf1d6815483a72d7470416c1e3662eb912f and 315aff357b5dc3a392a8247baa5666f3f68ae7ab.
+
+</details>
+
+<details>
+<summary>⛔ Files ignored due to path filters (1)</summary>
+
+* `Cargo.lock` is excluded by `!**/*.lock`
+
+</details>
+
+<details>
+<summary>📒 Files selected for processing (10)</summary>
+
+* `crates/components/src/album_details.rs`
+* `crates/config/src/lib.rs`
+* `crates/kopuz/src/main.rs`
+* `crates/pages/src/server/subsonic_sync.rs`
+* `crates/reader/Cargo.toml`
+* `crates/reader/src/cover_fetcher.rs`
+* `crates/reader/src/lib.rs`
+* `crates/reader/src/metadata.rs`
+* `crates/reader/src/models.rs`
+* `crates/reader/src/scanner.rs`
+
+</details>
+
+</details>
+
+<!-- This is an auto-generated comment by CodeRabbit for review status -->
+--
+author:	coderabbitai
+association:	contributor
+edited:	false
+status:	commented
+--
+**Actionable comments posted: 4**
+
+<details>
+<summary>♻️ Duplicate comments (2)</summary><blockquote>
+
+<details>
+<summary>crates/reader/src/cover_fetcher.rs (2)</summary><blockquote>
+
+`197-205`: _⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_
+
+**Use HTTPS for the Last.fm API call.**
+
+This request still uses plain HTTP, so the API key goes over the wire unencrypted. The `album.getInfo` documentation links its example request through `https://ws.audioscrobbler.com/2.0/`. ([last.fm](https://www.last.fm/fr/api/show/album.getInfo))
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+In `@crates/reader/src/cover_fetcher.rs` around lines 197 - 205, The Last.fm API
+call is using plain HTTP in the
+self.client.get("http://ws.audioscrobbler.com/2.0/") call; update that URL to
+use HTTPS (https://ws.audioscrobbler.com/2.0/) so the api_key and other params
+are sent encrypted, i.e., change the string passed to self.client.get(...) in
+cover_fetcher.rs (the album.getinfo request built with .query(...)) to use
+https://.
+```
+
+</details>
+
+---
+
+`137-149`: _⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_
+
+**Match the documented Cover Art Archive image schema.**
+
+The Cover Art Archive marks front images with `front` and `types`, not a singular `type` field, so this deserializer can miss or reject valid front-cover responses. ([musicbrainz.org](https://musicbrainz.org/doc/Cover_Art_Archive/API?utm_source=openai))
+
+<details>
+<summary>🤖 Prompt for AI Agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+In `@crates/reader/src/cover_fetcher.rs` around lines 137 - 149, The
+CoverArchiveImage deserializer and selection logic are incorrect: replace the
+single image_type field in struct CoverArchiveImage with fields matching the API
+schema (e.g., front: Option<bool> and types: Option<Vec<String>> along with
+image: String), then change the selection logic that builds url (the .find
+closure) to detect front images by checking either front == Some(true) or that
+types contains "Front" (case-insensitive as desired), falling back to
+body.images.first() if none match; update any references to image_type
+accordingly.
+```
+
+</details>
+
+</blockquote></details>
+
+</blockquote></details>
+
+<details>
+<summary>🤖 Prompt for all review comments with AI agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+Inline comments:
+In `@crates/config/src/lib.rs`:
+- Around line 564-565: The serde default for the auto_fetch_covers field
+currently enables third‑party cover lookups for existing configs; change the
+default to opt‑out by updating the default provider used by #[serde(default =
+"default_auto_fetch_covers")] so that default_auto_fetch_covers() returns false
+(or replace the attribute to point to a new default function returning false),
+and run/update any tests or docs that assume the old true default to reflect the
+new opt‑out behavior for the auto_fetch_covers field.
+
+In `@crates/kopuz/src/main.rs`:
+- Around line 1339-1341: The Last.fm API key variable lastfm_key (and the logic
+that checks it when deciding to enable the Last.fm fallback) currently treats
+whitespace-only strings as set; change the check to treat whitespace-only keys
+as unset by trimming before emptiness checks (e.g., use
+lastfm_key.trim().is_empty() or work with lastfm_key.as_str().trim()) wherever
+the code presently uses !k.is_empty() or similar—update the logic around
+fetch_covers/fetch_strategy/lastfm_key usage so whitespace-only keys disable the
+Last.fm fallback just like an empty string.
+
+In `@crates/reader/src/cover_fetcher.rs`:
+- Around line 57-61: The current release_id selection stops at the first track
+with a matching album_id even if its musicbrainz_release_id is None; update the
+lookup to find the first track where t.album_id == album.id AND
+t.musicbrainz_release_id.is_some(), then extract the MBID (as_deref) from that
+track. Locate the release_id computation that uses
+library.tracks.iter().find(...) and change the predicate to require a present
+musicbrainz_release_id before calling and_then/map to as_deref so a later track
+with a valid MBID is returned.
+- Around line 151-159: The current fetch path calls .bytes() on the response
+without checking status, so non-2xx responses (404/5xx) can be treated as
+successful; update the request pipeline used in cover_fetcher to call
+.send().await, then call .error_for_status() (or .error_for_status_ref()) on the
+Response before .bytes() to convert HTTP errors into Err, and propagate that
+error so we don't cache error bodies — apply this change where the code does
+self.client.get(&url.image).send().await...bytes().await (and the similar
+occurrence around the other block referenced) so that only successful 2xx
+responses are converted to bytes and returned.
+
+---
+
+Duplicate comments:
+In `@crates/reader/src/cover_fetcher.rs`:
+- Around line 197-205: The Last.fm API call is using plain HTTP in the
+self.client.get("http://ws.audioscrobbler.com/2.0/") call; update that URL to
+use HTTPS (https://ws.audioscrobbler.com/2.0/) so the api_key and other params
+are sent encrypted, i.e., change the string passed to self.client.get(...) in
+cover_fetcher.rs (the album.getinfo request built with .query(...)) to use
+https://.
+- Around line 137-149: The CoverArchiveImage deserializer and selection logic
+are incorrect: replace the single image_type field in struct CoverArchiveImage
+with fields matching the API schema (e.g., front: Option<bool> and types:
+Option<Vec<String>> along with image: String), then change the selection logic
+that builds url (the .find closure) to detect front images by checking either
+front == Some(true) or that types contains "Front" (case-insensitive as
+desired), falling back to body.images.first() if none match; update any
+references to image_type accordingly.
+```
+
+</details>
+
+<details>
+<summary>🪄 Autofix (Beta)</summary>
+
+Fix all unresolved CodeRabbit comments on this PR:
+
+- [ ] <!-- {"checkboxId": "4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --> Push a commit to this branch (recommended)
+- [ ] <!-- {"checkboxId": "ff5b1114-7d8c-49e6-8ac1-43f82af23a33"} --> Create a new PR with the fixes
+
+</details>
+
+---
+
+<details>
+<summary>ℹ️ Review info</summary>
+
+<details>
+<summary>⚙️ Run configuration</summary>
+
+**Configuration used**: defaults
+
+**Review profile**: CHILL
+
+**Plan**: Pro Plus
+
+**Run ID**: `ff4987c1-4e6e-4eee-b1b1-9062fccbadd2`
+
+</details>
+
+<details>
+<summary>📥 Commits</summary>
+
+Reviewing files that changed from the base of the PR and between 315aff357b5dc3a392a8247baa5666f3f68ae7ab and a56fb66010d1912a842f09043f6bab047d4f35d7.
+
+</details>
+
+<details>
+<summary>⛔ Files ignored due to path filters (1)</summary>
+
+* `Cargo.lock` is excluded by `!**/*.lock`
+
+</details>
+
+<details>
+<summary>📒 Files selected for processing (10)</summary>
+
+* `crates/components/src/album_details.rs`
+* `crates/config/src/lib.rs`
+* `crates/kopuz/src/main.rs`
+* `crates/pages/src/server/subsonic_sync.rs`
+* `crates/reader/Cargo.toml`
+* `crates/reader/src/cover_fetcher.rs`
+* `crates/reader/src/lib.rs`
+* `crates/reader/src/metadata.rs`
+* `crates/reader/src/models.rs`
+* `crates/reader/src/scanner.rs`
+
+</details>
+
+</details>
+
+<!-- This is an auto-generated comment by CodeRabbit for review status -->
+--
+author:	Irilith
+association:	member
+edited:	false
+status:	none
+--
+can you check coderabbit review, if it valid look into it, if not skip.
+--
+author:	coderabbitai
+association:	contributor
+edited:	false
+status:	commented
+--
+**Actionable comments posted: 1**
+
+> [!CAUTION]
+> Some comments are outside the diff and can’t be posted inline due to platform limitations.
+> 
+> 
+> 
+> <details>
+> <summary>⚠️ Outside diff range comments (1)</summary><blockquote>
+> 
+> <details>
+> <summary>crates/pages/src/server/subsonic_sync.rs (1)</summary><blockquote>
+> 
+> `179-210`: _⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_
+> 
+> **Preserve manual server covers when refreshing `jellyfin_albums`.**
+> 
+> This writeback path bypasses the new `Library::add_album` merge rules and rebuilds server albums with `manual_cover: false`. Any manual upload on a Jellyfin/Subsonic album gets dropped on the next sync, especially in the `clear_first` and full-replacement paths.
+> 
+> <details>
+> <summary>🛠️ Suggested direction</summary>
+> 
+> ```diff
+> +fn merge_manual_cover(existing: Option<&Album>, mut incoming: Album) -> Album {
+> +    if let Some(existing) = existing {
+> +        if incoming.cover_path.is_none() || existing.manual_cover {
+> +            incoming.cover_path = existing.cover_path.clone();
+> +        }
+> +        if existing.manual_cover {
+> +            incoming.manual_cover = true;
+> +        }
+> +    }
+> +    incoming
+> +}
+> ```
+> 
+> Use the same merge before pushing Jellyfin albums and before assigning `data.albums` into `lib_write.jellyfin_albums`.
+> </details>
+> 
+> <details>
+> <summary>🤖 Prompt for AI Agents</summary>
+> 
+> ```
+> Verify each finding against current code. Fix only still-valid issues, skip the
+> rest with a brief reason, keep changes minimal, and validate.
+> 
+> In `@crates/pages/src/server/subsonic_sync.rs` around lines 179 - 210, The current
+> code overwrites lib_write.jellyfin_albums with new vectors (out_albums and
+> data.albums), which drops manual_cover edits; instead merge each incoming album
+> through the library's existing merge logic (Library::add_album or whatever merge
+> helper you have) so manual server covers are preserved—i.e., iterate over
+> out_albums and data.albums and call the merge/add method (referencing
+> Library::add_album and lib_write.jellyfin_albums/data.albums) rather than
+> assigning or naively pushing/replacing the vector.
+> ```
+> 
+> </details>
+> 
+> </blockquote></details>
+> 
+> </blockquote></details>
+
+<details>
+<summary>🤖 Prompt for all review comments with AI agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+Inline comments:
+In `@crates/reader/src/cover_fetcher.rs`:
+- Around line 167-170: The MusicBrainz query is built by interpolating raw album
+and artist into a quoted Lucene string (variables album and artist), which
+breaks on embedded quotes or backslashes; before building query in
+cover_fetcher.rs escape backslashes and double quotes in both album and artist
+(e.g., replace "\" with "\\\"" and "\" with "\\\\" in that order) and then use
+the escaped values when formatting the query, preserving the existing Unknown
+Artist check and query logic.
+
+---
+
+Outside diff comments:
+In `@crates/pages/src/server/subsonic_sync.rs`:
+- Around line 179-210: The current code overwrites lib_write.jellyfin_albums
+with new vectors (out_albums and data.albums), which drops manual_cover edits;
+instead merge each incoming album through the library's existing merge logic
+(Library::add_album or whatever merge helper you have) so manual server covers
+are preserved—i.e., iterate over out_albums and data.albums and call the
+merge/add method (referencing Library::add_album and
+lib_write.jellyfin_albums/data.albums) rather than assigning or naively
+pushing/replacing the vector.
+```
+
+</details>
+
+<details>
+<summary>🪄 Autofix (Beta)</summary>
+
+Fix all unresolved CodeRabbit comments on this PR:
+
+- [ ] <!-- {"checkboxId": "4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --> Push a commit to this branch (recommended)
+- [ ] <!-- {"checkboxId": "ff5b1114-7d8c-49e6-8ac1-43f82af23a33"} --> Create a new PR with the fixes
+
+</details>
+
+---
+
+<details>
+<summary>ℹ️ Review info</summary>
+
+<details>
+<summary>⚙️ Run configuration</summary>
+
+**Configuration used**: defaults
+
+**Review profile**: CHILL
+
+**Plan**: Pro Plus
+
+**Run ID**: `7a32cb49-f2b2-4dbc-acd0-a16f2b5a8e3c`
+
+</details>
+
+<details>
+<summary>📥 Commits</summary>
+
+Reviewing files that changed from the base of the PR and between a56fb66010d1912a842f09043f6bab047d4f35d7 and cabc870ffc648fbc312ad71ca784bf8b9be20899.
+
+</details>
+
+<details>
+<summary>⛔ Files ignored due to path filters (1)</summary>
+
+* `Cargo.lock` is excluded by `!**/*.lock`
+
+</details>
+
+<details>
+<summary>📒 Files selected for processing (10)</summary>
+
+* `crates/components/src/album_details.rs`
+* `crates/config/src/lib.rs`
+* `crates/kopuz/src/main.rs`
+* `crates/pages/src/server/subsonic_sync.rs`
+* `crates/reader/Cargo.toml`
+* `crates/reader/src/cover_fetcher.rs`
+* `crates/reader/src/lib.rs`
+* `crates/reader/src/metadata.rs`
+* `crates/reader/src/models.rs`
+* `crates/reader/src/scanner.rs`
+
+</details>
+
+<details>
+<summary>✅ Files skipped from review due to trivial changes (1)</summary>
+
+* crates/reader/src/metadata.rs
+
+</details>
+
+</details>
+
+<!-- This is an auto-generated comment by CodeRabbit for review status -->
+--
+author:	Irilith
+association:	member
+edited:	false
+status:	changes requested
+--
+this pr is lack of logs too, please add more logs bcause in current state i dont see anything happening visually and logs wise
+--
+author:	coderabbitai
+association:	contributor
+edited:	false
+status:	commented
+--
+**Actionable comments posted: 1**
+
+<details>
+<summary>🤖 Prompt for all review comments with AI agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+Inline comments:
+In `@crates/pages/src/server/subsonic_sync.rs`:
+- Around line 224-234: The matching logic uses album.id directly so
+Subsonic/Custom IDs that append a cover-tag suffix won't match prior state;
+update the merge to use a stable album identity by normalizing IDs before
+comparing (e.g., implement and use a helper like normalize_album_id or compute a
+stable key from title/artist/album_id_base that strips the cover-tag suffix)
+when iterating lib_write.jellyfin_albums and when building Subsonic/Custom IDs
+(the block that constructs those IDs at lines ~291-295). Replace direct
+comparisons of album.id/old.id with comparisons of the normalized key (or
+compute the stable key once and attach it to the album struct) so manual_cover
+and cover_path preservation survive resyncs.
+```
+
+</details>
+
+<details>
+<summary>🪄 Autofix (Beta)</summary>
+
+Fix all unresolved CodeRabbit comments on this PR:
+
+- [ ] <!-- {"checkboxId": "4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --> Push a commit to this branch (recommended)
+- [ ] <!-- {"checkboxId": "ff5b1114-7d8c-49e6-8ac1-43f82af23a33"} --> Create a new PR with the fixes
+
+</details>
+
+---
+
+<details>
+<summary>ℹ️ Review info</summary>
+
+<details>
+<summary>⚙️ Run configuration</summary>
+
+**Configuration used**: defaults
+
+**Review profile**: CHILL
+
+**Plan**: Pro Plus
+
+**Run ID**: `90e4b91a-e670-4f96-b63e-aeada185f013`
+
+</details>
+
+<details>
+<summary>📥 Commits</summary>
+
+Reviewing files that changed from the base of the PR and between cabc870ffc648fbc312ad71ca784bf8b9be20899 and 0ea4af247c74a26e22561bd019e520a18dcaddab.
+
+</details>
+
+<details>
+<summary>📒 Files selected for processing (2)</summary>
+
+* `crates/pages/src/server/subsonic_sync.rs`
+* `crates/reader/src/cover_fetcher.rs`
+
+</details>
+
+</details>
+
+<!-- This is an auto-generated comment by CodeRabbit for review status -->
+--
+author:	jomvick
+association:	member
+edited:	false
+status:	none
+--
+Add the tracing dependency in crates/pages/Cargo.toml and insert info! logging into the sync process (number of albums, tracks, progress, etc.).
+Implement a normalize_album_id utility in crates/pages/src/server/subsonic_sync.rs that strips the image tag from the album ID during comparisons.
+Rewrite the Jellyfin and Subsonic merge logic: the code now correctly merges existing attributes (such as manual_cover or cover_path) instead of blindly overwriting the album vector.
+
+--
+author:	coderabbitai
+association:	contributor
+edited:	false
+status:	commented
+--
+**Actionable comments posted: 2**
+
+<details>
+<summary>🤖 Prompt for all review comments with AI agents</summary>
+
+```
+Verify each finding against current code. Fix only still-valid issues, skip the
+rest with a brief reason, keep changes minimal, and validate.
+
+Inline comments:
+In `@crates/pages/src/server/subsonic_sync.rs`:
+- Around line 266-276: When replacing an album in the non-clear merge path
+(inside the branch that finds index in lib_write.jellyfin_albums and assigns
+lib_write.jellyfin_albums[index] = new_album), also update any tracks in
+lib_write.jellyfin_tracks whose album_id points to the old album id so they
+reference the new_album.id (use the same normalize_album_id comparison used to
+find the album). Apply the same update in the parallel merge path around the
+other replacement (the block noted by the reviewer at the region analogous to
+lines 282–285) so Track.album_id values remain aligned after the album id
+rewrite.
+- Around line 247-251: When clear_first is true the code currently clears
+jellyfin_albums/tracks/genres but only extends server_artist_images, which
+leaves stale artist image entries; change the logic in the clear branch to
+replace lib_write.server_artist_images (not extend) with the new collection so
+the artist images are reset alongside albums/tracks/genres — update the same
+pattern used later around the server_artist_images handling (also referenced at
+the other occurrence around line ~290) so both code paths assign/replace
+lib_write.server_artist_images instead of extending it.
+```
+
+</details>
+
+<details>
+<summary>🪄 Autofix (Beta)</summary>
+
+Fix all unresolved CodeRabbit comments on this PR:
+
+- [ ] <!-- {"checkboxId": "4b0d0e0a-96d7-4f10-b296-3a18ea78f0b9"} --> Push a commit to this branch (recommended)
+- [ ] <!-- {"checkboxId": "ff5b1114-7d8c-49e6-8ac1-43f82af23a33"} --> Create a new PR with the fixes
+
+</details>
+
+---
+
+<details>
+<summary>ℹ️ Review info</summary>
+
+<details>
+<summary>⚙️ Run configuration</summary>
+
+**Configuration used**: defaults
+
+**Review profile**: CHILL
+
+**Plan**: Pro Plus
+
+**Run ID**: `7653faea-1ba4-4513-ae76-e7d7e2554f2c`
+
+</details>
+
+<details>
+<summary>📥 Commits</summary>
+
+Reviewing files that changed from the base of the PR and between 0ea4af247c74a26e22561bd019e520a18dcaddab and 4c84bf92ac164fc8bc4aae915e4c849f94afeec3.
+
+</details>
+
+<details>
+<summary>📒 Files selected for processing (2)</summary>
+
+* `crates/pages/Cargo.toml`
+* `crates/pages/src/server/subsonic_sync.rs`
+
+</details>
+
+</details>
+
+<!-- This is an auto-generated comment by CodeRabbit for review status -->
+--

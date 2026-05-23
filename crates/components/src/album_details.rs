@@ -76,11 +76,10 @@ pub fn AlbumDetails(
                         }
 
                         if library.read().save(&lib_path).is_ok() {
-                            if let Some(path) = old_cover {
-                                if path.starts_with(&cover_cache) {
+                            if let Some(path) = old_cover
+                                && path.starts_with(&cover_cache) {
                                     let _ = tokio::fs::remove_file(&path).await;
                                 }
-                            }
                         } else {
                             let mut lib = library.write();
                             if let Some(album) = lib.albums.iter_mut().find(|a| a.id == aid) {

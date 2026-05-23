@@ -6,11 +6,10 @@ pub fn jellyfin_image_url(
     max_width: u32,
     quality: u32,
 ) -> String {
-    if let Some(tag) = image_tag {
-        if let Some(url) = decode_embedded_cover_url(tag) {
+    if let Some(tag) = image_tag
+        && let Some(url) = decode_embedded_cover_url(tag) {
             return url;
         }
-    }
 
     let mut params = Vec::new();
     params.push(format!("maxWidth={}", max_width));
@@ -62,10 +61,13 @@ pub fn jellyfin_image_url_from_path(
         return None;
     }
 
-    if let Some(tag) = tag {
-        if let Some(url) = decode_embedded_cover_url(tag) {
+    if let Some(tag) = tag
+        && let Some(url) = decode_embedded_cover_url(tag) {
             return Some(url);
         }
+
+    if server_url.is_empty() {
+        return None;
     }
 
     Some(jellyfin_image_url(
@@ -104,17 +106,16 @@ pub fn track_cover_url_with_album_fallback(
         ));
     }
 
-    if !album_id_str.is_empty() {
-        if let Some((album_item_id, album_tag)) = parse_jellyfin_path(album_id_str) {
+    if !album_id_str.is_empty()
+        && let Some((album_item_id, album_tag)) = parse_jellyfin_path(album_id_str) {
             if album_tag == Some("none") {
                 return None;
             }
 
-            if let Some(tag) = album_tag {
-                if let Some(url) = decode_embedded_cover_url(tag) {
+            if let Some(tag) = album_tag
+                && let Some(url) = decode_embedded_cover_url(tag) {
                     return Some(url);
                 }
-            }
 
             return Some(jellyfin_image_url(
                 server_url,
@@ -125,7 +126,6 @@ pub fn track_cover_url_with_album_fallback(
                 quality,
             ));
         }
-    }
 
     if let Some((id, _)) = parse_jellyfin_path(track_path_str) {
         return Some(jellyfin_image_url(
@@ -139,6 +139,25 @@ pub fn track_cover_url_with_album_fallback(
     }
 
     None
+}
+
+pub fn track_cover_url_or_default(
+    track_path_str: &str,
+    album_id_str: &str,
+    server_url: &str,
+    access_token: Option<&str>,
+    max_width: u32,
+    quality: u32,
+) -> String {
+    track_cover_url_with_album_fallback(
+        track_path_str,
+        album_id_str,
+        server_url,
+        access_token,
+        max_width,
+        quality,
+    )
+    .unwrap_or_else(|| crate::default_cover_url().as_ref().to_string())
 }
 
 fn decode_embedded_cover_url(tag: &str) -> Option<String> {
