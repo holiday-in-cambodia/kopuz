@@ -52,6 +52,7 @@ pub fn JellyfinPlaylists(
             && yt_nonce == 0
             && trigger == 0
             && library.peek().last_yt_playlists_sync_at.is_some()
+            && !playlist_store.peek().jellyfin_playlists.is_empty()
         {
             return;
         }
@@ -452,12 +453,7 @@ pub fn JellyfinPlaylists(
         .read()
         .server
         .as_ref()
-        .map(|s| {
-            matches!(
-                s.service,
-                MusicService::YtMusic | MusicService::SoundCloud
-            )
-        })
+        .map(|s| matches!(s.service, MusicService::YtMusic | MusicService::SoundCloud))
         .unwrap_or(false);
 
     rsx! {

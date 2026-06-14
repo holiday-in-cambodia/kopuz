@@ -58,7 +58,15 @@ pub fn JellyfinFavorites(
             Some(MusicService::YtMusic) | Some(MusicService::SoundCloud)
         );
 
-        if is_account_backend && nonce == 0 && library.peek().last_yt_sync_at.is_some() {
+        // Self-heal: a prior sync that completed but produced zero tracks
+        // (e.g. an API-shape bug) still stamped `last_yt_sync_at`, which would
+        // otherwise wedge this view empty forever. Only honour the cached
+        // stamp when there's actually cached data to show.
+        if is_account_backend
+            && nonce == 0
+            && library.peek().last_yt_sync_at.is_some()
+            && !library.peek().jellyfin_tracks.is_empty()
+        {
             return;
         }
 

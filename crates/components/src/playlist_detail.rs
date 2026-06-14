@@ -246,15 +246,30 @@ pub fn PlaylistDetail(
                                     }
                                 }
                                 MusicService::SoundCloud => {
-                                    if !token.is_empty()
-                                        && let Ok(sc_tracks) =
+                                    if !token.is_empty() {
+                                        // "LM" is the synthetic Liked Songs
+                                        // entry (mirrors YT Music), not a real
+                                        // SoundCloud playlist id — hydrate it
+                                        // from the account's likes instead of
+                                        // the playlists endpoint.
+                                        if pid_clone == "LM" {
+                                            let mut acc = Vec::new();
+                                            let _ = server::soundcloud::stream_liked_tracks(
+                                                &token,
+                                                |page| acc.extend(page),
+                                            )
+                                            .await;
+                                            tracks.set(acc);
+                                            has_loaded_jellyfin_tracks.set(true);
+                                        } else if let Ok(sc_tracks) =
                                             server::soundcloud::get_playlist_entries(
                                                 &pid_clone, &token,
                                             )
                                             .await
-                                    {
-                                        tracks.set(sc_tracks);
-                                        has_loaded_jellyfin_tracks.set(true);
+                                        {
+                                            tracks.set(sc_tracks);
+                                            has_loaded_jellyfin_tracks.set(true);
+                                        }
                                     }
                                 }
                             }

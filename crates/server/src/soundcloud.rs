@@ -464,8 +464,13 @@ pub async fn stream_liked_tracks<F: FnMut(Vec<Track>)>(
 ) -> Result<(), String> {
     let http = http_client();
     let cid = client_id(&http, false).await?;
+    // `/me/likes/tracks` 404s; the web player reads likes from
+    // `/users/{id}/track_likes` (same base the like-write endpoint uses).
+    let uid = derive_user_id(token)
+        .await
+        .ok_or("SoundCloud: couldn't resolve the signed-in user id")?;
     let mut next = Some(format!(
-        "{API_V2}/me/likes/tracks?client_id={cid}&limit=200&linked_partitioning=1"
+        "{API_V2}/users/{uid}/track_likes?client_id={cid}&limit=200&linked_partitioning=1"
     ));
     let mut pages = 0;
     while let Some(url) = next.take() {
@@ -481,7 +486,16 @@ pub async fn stream_liked_tracks<F: FnMut(Vec<Track>)>(
         let page: Vec<Track> = json
             .get("collection")
             .and_then(|v| v.as_array())
-            .map(|arr| arr.iter().filter_map(parse_track).collect())
+            .map(|arr| {
+                arr.iter()
+                    // `/me/likes/tracks` wraps each entry as
+                    // `{created_at, kind:"like", track:{…}}`; the actual
+                    // track object is nested under "track". Fall back to the
+                    // item itself for endpoints that return bare tracks.
+                    .map(|item| item.get("track").unwrap_or(item))
+                    .filter_map(parse_track)
+                    .collect()
+            })
             .unwrap_or_default();
         if !page.is_empty() {
             on_page(page);
@@ -650,6 +664,16 @@ pub async fn set_track_like(
     let status = resp.status();
     if !status.is_success() {
         let body = resp.text().await.unwrap_or_default();
+        // DataDome answers blocked writes with a captcha-challenge redirect
+        // (HTTP 403 + a geo.captcha-delivery.com URL). Surface a readable
+        // reason instead of dumping the raw challenge payload.
+        if status.as_u16() == 403 || body.contains("captcha-delivery.com") {
+            return Err(
+                "SoundCloud blocks likes outside its web player (DataDome bot \
+                 protection). Like this track in the SoundCloud app or website."
+                    .to_string(),
+            );
+        }
         let body: String = body.chars().take(300).collect();
         return Err(format!("SoundCloud like HTTP {status}: {body}"));
     }
