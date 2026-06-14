@@ -630,8 +630,12 @@ pub async fn set_track_like(
 
     // Public API: POST/DELETE https://api.soundcloud.com/likes/tracks/{id}
     let url = format!("{API_V1}/likes/tracks/{track_id}");
-    let req = if like { http.post(&url) } else { http.delete(&url) }
-        .header("Accept", "application/json; charset=utf-8");
+    let req = if like {
+        http.post(&url)
+    } else {
+        http.delete(&url)
+    }
+    .header("Accept", "application/json; charset=utf-8");
     let resp = apply_auth(req, Some(token))
         .send()
         .await
@@ -640,7 +644,13 @@ pub async fn set_track_like(
         return Ok(());
     }
     let pub_status = resp.status();
-    let pub_body: String = resp.text().await.unwrap_or_default().chars().take(200).collect();
+    let pub_body: String = resp
+        .text()
+        .await
+        .unwrap_or_default()
+        .chars()
+        .take(200)
+        .collect();
     tracing::warn!(%pub_status, pub_body = %pub_body, "soundcloud public-api like failed; trying api-v2");
 
     // Fallback: the web player's api-v2 endpoint (DataDome-gated; needs the
@@ -651,9 +661,13 @@ pub async fn set_track_like(
         .await
         .ok_or("SoundCloud: couldn't resolve the signed-in user id")?;
     let url = format!("{API_V2}/users/{uid}/track_likes/{track_id}?client_id={cid}");
-    let mut req = if like { http.put(url) } else { http.delete(url) }
-        .header("Origin", WEB_HOST)
-        .header("Referer", format!("{WEB_HOST}/"));
+    let mut req = if like {
+        http.put(url)
+    } else {
+        http.delete(url)
+    }
+    .header("Origin", WEB_HOST)
+    .header("Referer", format!("{WEB_HOST}/"));
     if let Some(dd) = datadome.filter(|s| !s.is_empty()) {
         req = req.header("Cookie", format!("datadome={dd}"));
     }

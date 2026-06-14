@@ -220,8 +220,13 @@ pub async fn set_tracks_favorite(
             };
             for id in item_ids {
                 record!(
-                    crate::soundcloud::set_track_like(id, favorite, &conn.token, datadome.as_deref())
-                        .await
+                    crate::soundcloud::set_track_like(
+                        id,
+                        favorite,
+                        &conn.token,
+                        datadome.as_deref()
+                    )
+                    .await
                 );
             }
         }
