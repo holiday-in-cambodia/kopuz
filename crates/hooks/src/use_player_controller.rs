@@ -808,8 +808,9 @@ impl PlayerController {
                                 return;
                             }
 
-                            if let Ok((source, hint)) = source_res {
-                                if *play_generation.read() == current_gen {
+                            if let Ok((source, hint)) = source_res
+                                && *play_generation.read() == current_gen
+                            {
                                     let meta = NowPlayingMeta {
                                         title: track.title.clone(),
                                         artist: track.artist.clone(),
@@ -1170,7 +1171,6 @@ impl PlayerController {
                                             }
                                         });
                                     }
-                                }
                             }
                         }
                         .instrument(tracing::info_span!("player.resolve_stream", idx)),
