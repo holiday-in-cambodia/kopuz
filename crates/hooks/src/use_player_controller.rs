@@ -1255,12 +1255,23 @@ impl PlayerController {
                                         if let Ok(response) = reqwest::get(&cover_url).await
                                             && let Ok(bytes) = response.bytes().await
                                         {
-                                            let temp_dir = std::env::temp_dir();
-                                            let random_id: u64 = rand::random();
-                                            let file_path = temp_dir
-                                                .join(format!("kopuz_cover_{}.jpg", random_id));
+                                            let cover_dir = directories::ProjectDirs::from(
+                                                "com",
+                                                "temidaradev",
+                                                "kopuz",
+                                            )
+                                            .map(|d| d.cache_dir().join("covers"))
+                                            .unwrap_or_else(std::env::temp_dir);
 
-                                            if tokio::fs::write(&file_path, bytes).await.is_ok()
+                                            let mut hasher =
+                                                std::collections::hash_map::DefaultHasher::new();
+                                            std::hash::Hash::hash(&cover_url, &mut hasher);
+                                            let cover_hash = std::hash::Hasher::finish(&hasher);
+                                            let file_path = cover_dir
+                                                .join(format!("kopuz_cover_{cover_hash:x}.jpg"));
+
+                                            if tokio::fs::create_dir_all(&cover_dir).await.is_ok()
+                                                && tokio::fs::write(&file_path, bytes).await.is_ok()
                                                 && *play_generation.read() == current_gen
                                             {
                                                 let path_str =
