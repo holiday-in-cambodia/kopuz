@@ -379,7 +379,7 @@ impl JsEngine for SubprocessEngine {
                     .await
                     .map_err(|e| format!("write solver temp: {e}"))?;
             }
-            let child = match {
+            let spawned = {
                 let mut cmd = tokio::process::Command::new(rt.bin);
                 #[cfg(target_os = "windows")]
                 cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
@@ -389,7 +389,8 @@ impl JsEngine for SubprocessEngine {
                     .stderr(std::process::Stdio::piped())
                     .kill_on_drop(true)
                     .spawn()
-            } {
+            };
+            let child = match spawned {
                 Ok(c) => c,
                 Err(e) => {
                     let _ = tokio::fs::remove_file(&path).await;
