@@ -1255,12 +1255,43 @@ impl PlayerController {
                                         if let Ok(response) = reqwest::get(&cover_url).await
                                             && let Ok(bytes) = response.bytes().await
                                         {
-                                            let temp_dir = std::env::temp_dir();
-                                            let random_id: u64 = rand::random();
-                                            let file_path = temp_dir
-                                                .join(format!("kopuz_cover_{}.jpg", random_id));
+                                            #[cfg(target_os = "android")]
+                                            let cover_dir = {
+                                                let mut base = player::systemint::get_files_dir()
+                                                    .map(std::path::PathBuf::from)
+                                                    .unwrap_or_else(|| {
+                                                        std::path::PathBuf::from(".")
+                                                    })
+                                                    .join("cache");
+                                                if tokio::fs::create_dir_all(&base)
+                                                    .await
+                                                    .is_err()
+                                                {
+                                                    base = std::path::PathBuf::from("./cache");
+                                                }
+                                                base.join("covers")
+                                            };
+                                            #[cfg(all(
+                                                not(target_arch = "wasm32"),
+                                                not(target_os = "android")
+                                            ))]
+                                            let cover_dir = directories::ProjectDirs::from(
+                                                "com",
+                                                "temidaradev",
+                                                "kopuz",
+                                            )
+                                            .map(|d| d.cache_dir().join("covers"))
+                                            .unwrap_or_else(std::env::temp_dir);
 
-                                            if tokio::fs::write(&file_path, bytes).await.is_ok()
+                                            let mut hasher =
+                                                std::collections::hash_map::DefaultHasher::new();
+                                            std::hash::Hash::hash(&cover_url, &mut hasher);
+                                            let cover_hash = std::hash::Hasher::finish(&hasher);
+                                            let file_path = cover_dir
+                                                .join(format!("kopuz_cover_{cover_hash:x}.jpg"));
+
+                                            if tokio::fs::create_dir_all(&cover_dir).await.is_ok()
+                                                && tokio::fs::write(&file_path, bytes).await.is_ok()
                                                 && *play_generation.read() == current_gen
                                             {
                                                 let path_str =
