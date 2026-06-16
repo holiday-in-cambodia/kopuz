@@ -1434,21 +1434,30 @@ fn App() -> Element {
         const TRAY_QUIT_ID: &str = "kopuz-tray-quit";
 
         let win_ctx = window();
-        dioxus::desktop::use_tray_menu_event_handler({
+        let handle_menu = {
             let win_ctx = win_ctx.clone();
-            move |event| {
-                if event.id == TRAY_SHOW_ID {
+            move |id: &dioxus::desktop::trayicon::menu::MenuId| {
+                tracing::debug!("tray menu event id={:?}", id);
+                if *id == TRAY_SHOW_ID {
                     if win_ctx.is_visible() {
                         win_ctx.set_visible(false);
                     } else {
                         win_ctx.set_visible(true);
                         win_ctx.set_focus();
                     }
-                } else if event.id == TRAY_QUIT_ID {
+                } else if *id == TRAY_QUIT_ID {
                     win_ctx.set_close_behavior(WindowCloseBehaviour::WindowCloses);
                     win_ctx.close();
                 }
             }
+        };
+        dioxus::desktop::use_tray_menu_event_handler({
+            let handle_menu = handle_menu.clone();
+            move |event| handle_menu(&event.id)
+        });
+        dioxus::desktop::use_muda_event_handler({
+            let handle_menu = handle_menu.clone();
+            move |event| handle_menu(&event.id)
         });
 
         use_effect({
