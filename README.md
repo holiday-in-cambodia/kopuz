@@ -254,8 +254,8 @@ development environment.
 > The system tray icon (used by **minimize to tray**) requires the
 > **appindicator** library at runtime. It is included in the package
 > dependencies below. Without it the tray icon simply won't appear and closing
-> the window quits the app instead of hiding it — Kopuz still runs normally.
-> The Nix dev shell already provides it.
+> the window quits the app instead of hiding it — Kopuz still runs normally. The
+> Nix dev shell already provides it.
 
 **Arch Linux Based Systems**
 
