@@ -204,7 +204,7 @@ pub fn Artist(
         let names: Vec<String> = names
             .into_iter()
             .filter(|n| {
-                !already.contains_key(n) && db_photos.get(&normalize_artist_key(n)).is_none()
+                !already.contains_key(n) && !db_photos.contains_key(&normalize_artist_key(n))
             })
             .collect();
         drop(already);
@@ -224,10 +224,7 @@ pub fn Artist(
             let shared = shared.clone();
             spawn(
                 async move {
-                    loop {
-                        let Some(name) = shared.lock().ok().and_then(|mut it| it.next()) else {
-                            break;
-                        };
+                    while let Some(name) = shared.lock().ok().and_then(|mut it| it.next()) {
                         // Always record an outcome so the grid can tell "resolved,
                         // no photo" (→ album fallback) from "still loading"
                         // (→ placeholder). "" is the no-photo sentinel.
@@ -315,8 +312,8 @@ pub fn Artist(
                 if is_yt
                     && use_photo
                     && !fetched.contains_key(&display)
-                    && overrides.get(&norm).is_none()
-                    && photos.get(&norm).is_none()
+                    && !overrides.contains_key(&norm)
+                    && !photos.contains_key(&norm)
                 {
                     return (display, None);
                 }

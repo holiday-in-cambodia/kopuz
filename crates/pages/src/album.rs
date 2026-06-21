@@ -409,7 +409,6 @@ fn AlbumDetail(
     // straight from the catalog remote by that browse id so every searched /
     // discovered album renders (header + full track list) instead of "not found".
     let direct_remote_res: Resource<Option<::server::ytmusic::discover::YtAlbum>> = {
-        let active_source = active_source;
         use_resource(move || {
             let want = caps().discover && !*is_offline.read();
             let db_has = album_res.read().clone().flatten().is_some();
@@ -521,7 +520,6 @@ fn AlbumDetail(
     // shows it. `None` for local/other sources (gated on `discover`) and while
     // offline; drives both the full track list and the YT-styled header.
     let remote_album_res: Resource<Option<::server::ytmusic::discover::YtAlbum>> = {
-        let active_source = active_source;
         use_resource(move || {
             let want = caps().discover && !*is_offline.read();
             let album = album_res.read().clone().flatten();
