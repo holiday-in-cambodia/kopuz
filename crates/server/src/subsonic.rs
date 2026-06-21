@@ -26,7 +26,7 @@ struct SubsonicError {
     message: String,
 }
 
-pub(crate) struct SubsonicClient {
+pub struct SubsonicClient {
     http_client: reqwest::Client,
     base_url: String,
     username: String,
