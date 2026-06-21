@@ -1,6 +1,6 @@
 <!--markdownlint-disable MD013 MD033 MD041 -->
 <div align="center">
-  <img src="crates/kopuz/assets/banner.png" alt="Logótipo do Kopuz" height="300"/>
+  <img src="../crates/kopuz/assets/banner.png" alt="Logótipo do Kopuz" height="300"/>
   <h1>Kopuz</h1>
   <p>
     Kopuz é uma aplicação moderna e leve de reprodutor de música construída com Rust
@@ -74,11 +74,11 @@ fonte de média transporta as suas próprias credenciais e os seus próprios fav
   (banner, melhores músicas, álbuns, singles, artistas relacionados),
   navegação por álbuns/playlists, e **rádio de mistura** ("iniciar rádio" a partir de qualquer faixa).
   Inicie sessão com a sua conta para a sua biblioteca, Músicas Gostadas e playlists — ou
-  execute-o **anonimamente** (sem início de sessão) para navegar, pesquisar e reproduzir faixas públicas. Veja [Configuração do YouTube Music](#youtube-music-setup).
+  execute-o **anonimamente** (sem início de sessão) para navegar, pesquisar e reproduzir faixas públicas. Veja [Configuração do YouTube Music](#configuração-do-youtube-music).
 - **SoundCloud**: Backend de streaming com pesquisa, reprodução de faixas (MP3 progressivo
   e Go+ AAC/HLS), as suas **faixas gostadas** como favoritos, playlists só de leitura, e
   gostar/não gostar. Adicionado através de um início de sessão único no navegador num perfil isolado. Veja
-  [Configuração do SoundCloud](#soundcloud-setup).
+  [Configuração do SoundCloud](#configuração-do-soundcloud).
 - **Suporte a Letras**: Desfrute de letras sincronizadas em tempo real e letras simples, completas com
   deslocamento automático para acompanhar a sua música.
 - **Favoritos**: Marque faixas localmente ou sincronize favoritos com o seu
