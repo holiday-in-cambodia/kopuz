@@ -321,11 +321,10 @@ fn AlbumGrid(
                                                     let Some(tag) = tags.get(idx).copied() else { return };
                                                     match tag {
                                                         AlbumAction::Queue => {
-                                                            let s_src = source.peek().clone();
-                                                            let read_db = consume_context::<hooks::ReadDb>();
+                                                            let album_src = active_source.peek().clone();
                                                             let album_id = id.clone();
                                                             spawn(async move {
-                                                                let mut tracks = read_db.album_tracks(&s_src, &album_id).await.unwrap_or_default();
+                                                                let mut tracks = album_src.album_tracks(&album_id).await.unwrap_or_default();
                                                                 tracks.sort_by(|a, b| {
                                                                     a.track_number.cmp(&b.track_number)
                                                                         .then_with(|| a.title.cmp(&b.title))
@@ -339,12 +338,10 @@ fn AlbumGrid(
                                                         }
                                                         AlbumAction::Remove => {
                                                             if cap.delete_from_disk {
-                                                                let s_src = source.peek().clone();
-                                                                let read_db = consume_context::<hooks::ReadDb>();
                                                                 let album_src = active_source.peek().clone();
                                                                 let album_id = id.clone();
                                                                 spawn(async move {
-                                                                    let to_delete = read_db.album_tracks(&s_src, &album_id).await.unwrap_or_default();
+                                                                    let to_delete = album_src.album_tracks(&album_id).await.unwrap_or_default();
                                                                     for track in &to_delete {
                                                                         if let Some(path) = track.id.local_path() {
                                                                             let _ = std::fs::remove_file(path);
@@ -499,14 +496,13 @@ fn AlbumDetail(
         ids
     });
     let tracks_res = {
-        let read_db = use_context::<hooks::ReadDb>();
         use_resource(move || {
             let _ = gens.generation(Table::Tracks);
-            let (read_db, s, ids) = (read_db.clone(), source(), matching_ids());
+            let (src, ids) = (active_source(), matching_ids());
             async move {
                 let mut out = Vec::new();
                 for id in &ids {
-                    out.extend(read_db.album_tracks(&s, id).await.unwrap_or_default());
+                    out.extend(src.album_tracks(id).await.unwrap_or_default());
                 }
                 out
             }

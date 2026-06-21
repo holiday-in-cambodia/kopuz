@@ -461,7 +461,17 @@ pub trait MediaSource: Send + Sync {
         })
     }
 
-    // --- uniform ops (default): a plain source-scoped DB write --------------
+    // --- uniform ops (default): a plain source-scoped DB read/write ---------
+
+    /// One album's tracks (disc/track-ordered), read from this source's library
+    /// cache. Uniform across sources — the UI goes through the source rather than
+    /// touching the DB directly.
+    async fn album_tracks(&self, album_id: &str) -> Result<Vec<reader::Track>, SourceError> {
+        self.db()
+            .album_tracks(self.source(), album_id)
+            .await
+            .map_err(SourceError::from)
+    }
 
     /// This source's favorite refs — its partition of the favorites table. The
     /// partition key is the source's own identity, so callers never compute it.
