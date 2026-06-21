@@ -356,6 +356,32 @@ pub trait MediaSource: Send + Sync {
         Err(SourceError::unsupported("album"))
     }
 
+    /// Resolve an opened album reference — a raw browse id, a `ytmusic:album:MPRE…`
+    /// (search rows with an album link), or a synthesized `ytmusic:album:<hash>`
+    /// (search rows without one) — to its full remote album. `None` when it can't
+    /// be resolved or has no tracks. The id→browse-id→album dance lives here so the
+    /// UI never reaches into the per-service catalog. Default unsupported; only
+    /// catalog remotes (YT) override.
+    async fn fetch_album_by_ref(
+        &self,
+        _id: &str,
+    ) -> Result<Option<crate::ytmusic::discover::YtAlbum>, SourceError> {
+        Err(SourceError::unsupported("album by ref"))
+    }
+
+    /// Resolve a saved album's title + artist to its full remote album (header +
+    /// every track) for the YT-Music-style album page — the local library stores
+    /// YT albums by hash with no browse id, so the page needs the remote listing.
+    /// `None` when it can't be resolved or has no tracks. Default unsupported; only
+    /// catalog remotes (YT) override.
+    async fn fetch_album_by_meta(
+        &self,
+        _title: &str,
+        _artist: &str,
+    ) -> Result<Option<crate::ytmusic::discover::YtAlbum>, SourceError> {
+        Err(SourceError::unsupported("album by meta"))
+    }
+
     /// One page of a remote playlist: `cursor = None` for the first page, then
     /// the returned cursor for each next (`None` once exhausted). Lets a UI loop
     /// stream a long playlist (play page 1 instantly, queue the rest) without a
@@ -1897,6 +1923,44 @@ impl MediaSource for YtSource {
             .fetch_album(browse_id)
             .await
             .map_err(SourceError::from)
+    }
+
+    async fn fetch_album_by_ref(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::ytmusic::discover::YtAlbum>, SourceError> {
+        // Resolve the id (raw browse id, `ytmusic:album:MPRE…`, or a synthesized
+        // `ytmusic:album:<hash>`) to a real browse id before fetching.
+        let browse_id = if let Some(bid) = crate::ytmusic::search::album_browse_id(id) {
+            Some(bid)
+        } else if let Some((album, artist)) = crate::ytmusic::search::synth_album_parts(id) {
+            self.resolve_album_browse_id(&album, &artist).await?
+        } else {
+            None
+        };
+        let Some(browse_id) = browse_id else {
+            return Ok(None);
+        };
+        Ok(self
+            .fetch_album(&browse_id)
+            .await
+            .ok()
+            .filter(|a| !a.tracks.is_empty()))
+    }
+
+    async fn fetch_album_by_meta(
+        &self,
+        title: &str,
+        artist: &str,
+    ) -> Result<Option<crate::ytmusic::discover::YtAlbum>, SourceError> {
+        let Some(browse_id) = self.resolve_album_browse_id(title, artist).await? else {
+            return Ok(None);
+        };
+        Ok(self
+            .fetch_album(&browse_id)
+            .await
+            .ok()
+            .filter(|a| !a.tracks.is_empty()))
     }
 
     async fn fetch_playlist_page(
