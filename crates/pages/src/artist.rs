@@ -164,9 +164,21 @@ pub fn Artist(
         if !caps().discover {
             return;
         }
+        if config.read().artist_photo_source != ArtistPhotoSource::ArtistPhoto {
+            return;
+        }
         if *images_fetch_done.read() || *is_fetching_images.read() {
             return;
         }
+        // Wait for the DB artist-image cache to load so we can skip artists whose
+        // photo was persisted on a previous run (otherwise we'd refetch every
+        // time the page opens).
+        let db_imgs = artist_images_res.read();
+        let Some((_, db_photos)) = db_imgs.clone() else {
+            return;
+        };
+        drop(db_imgs);
+
         let albums = albums_res.read().clone().unwrap_or_default();
         let sample = sample_tracks_res.read().clone().unwrap_or_default();
         if albums.is_empty() && sample.is_empty() {
@@ -186,7 +198,18 @@ pub fn Artist(
                 }
             }
         }
+        // Skip artists already resolved this session (context map) or persisted
+        // to the DB on a previous run (keyed by normalized name).
+        let already = fetched_artist_images.read();
+        let names: Vec<String> = names
+            .into_iter()
+            .filter(|n| {
+                !already.contains_key(n) && db_photos.get(&normalize_artist_key(n)).is_none()
+            })
+            .collect();
+        drop(already);
         if names.is_empty() {
+            images_fetch_done.set(true);
             return;
         }
         // Mark done up front so the effect doesn't respawn as the workers write
@@ -194,7 +217,6 @@ pub fn Artist(
         is_fetching_images.set(true);
         images_fetch_done.set(true);
 
-        let names: Vec<String> = names.into_iter().collect();
         let workers = 6usize;
         let shared = std::sync::Arc::new(std::sync::Mutex::new(names.into_iter()));
         for _ in 0..workers {
@@ -206,9 +228,24 @@ pub fn Artist(
                         let Some(name) = shared.lock().ok().and_then(|mut it| it.next()) else {
                             break;
                         };
-                        if let Ok(Some(url)) = source.fetch_artist_image(&name).await {
-                            fetched_artist_images.write().insert(name, url);
+                        // Always record an outcome so the grid can tell "resolved,
+                        // no photo" (→ album fallback) from "still loading"
+                        // (→ placeholder). "" is the no-photo sentinel.
+                        let url = source
+                            .fetch_artist_image(&name)
+                            .await
+                            .ok()
+                            .flatten()
+                            .unwrap_or_default();
+                        // Persist found photos to the DB (kind "server" → the
+                        // grid's `photos` map) so future opens load them instantly
+                        // instead of re-searching YT.
+                        if !url.is_empty() {
+                            let _ = source
+                                .set_artist_image(&normalize_artist_key(&name), "server", Some(&url))
+                                .await;
                         }
+                        fetched_artist_images.write().insert(name, url);
                     }
                 }
                 .instrument(tracing::info_span!("artist.fetch_yt_images")),
@@ -226,10 +263,12 @@ pub fn Artist(
         let (overrides, photos) = artist_images_res.read().clone().unwrap_or_default();
         let fetched = fetched_artist_images.read();
         let conf = config.read();
-        // YT Music: photos are exactly the YT artist avatars — force the photo
-        // path on and drop the album-cover fallback (handled per-artist below).
+        let use_photo = conf.artist_photo_source == ArtistPhotoSource::ArtistPhoto;
+        // YT resolves photos one artist at a time. Until an artist resolves we
+        // render a placeholder rather than its album cover, so the card doesn't
+        // visibly swap album→photo (which read as a loading glitch). The map
+        // carries a "" sentinel for "resolved, no photo" → album fallback.
         let is_yt = caps().discover;
-        let use_photo = is_yt || conf.artist_photo_source == ArtistPhotoSource::ArtistPhoto;
         let offline = caps().downloads && *is_offline.read();
 
         // norm → (display name, first album cover-path).
@@ -267,14 +306,26 @@ pub fn Artist(
             .into_iter()
             .filter(|(_, (display, _))| !offline || downloaded.contains(&display.to_lowercase()))
             .map(|(norm, (display, album_cover))| {
-                // YT: no album-cover fallback — only the resolved YT photo (None
-                // until it lands → placeholder icon, never an album cover).
-                let album_cover = if is_yt { None } else { album_cover };
+                // YT + photos on, artist not resolved yet → placeholder (no album
+                // flash). Unless the user set a custom override / DB photo exists.
+                if is_yt
+                    && use_photo
+                    && !fetched.contains_key(&display)
+                    && overrides.get(&norm).is_none()
+                    && photos.get(&norm).is_none()
+                {
+                    return (display, None);
+                }
+                // "" sentinel = resolved with no photo → fall back to album cover.
+                let fetched_url = fetched
+                    .get(&display)
+                    .map(|u| u.as_str())
+                    .filter(|u| !u.is_empty());
                 let cover = ::server::cover::artist(
                     &conf,
                     overrides.get(&norm).map(|p| p.as_path()),
                     photos.get(&norm),
-                    fetched.get(&display).map(|u| u.as_str()),
+                    fetched_url,
                     album_cover.as_deref(),
                     use_photo,
                     320,
@@ -284,6 +335,24 @@ pub fn Artist(
             .collect();
         out.sort_by_key(|a| a.0.to_lowercase());
         out
+    });
+
+    // Restore the grid's scroll position once, after the artist list first
+    // renders. Guarded so the incremental photo loads (which re-run the memo)
+    // don't keep yanking the view back to the saved offset.
+    let mut scroll_restored = use_signal(|| false);
+    use_effect(move || {
+        if *scroll_restored.read() || !artist_name.peek().is_empty() {
+            return;
+        }
+        if artists().is_empty() {
+            return;
+        }
+        scroll_restored.set(true);
+        let _ = dioxus::document::eval(&crate::scroll_persist::restore_eval(
+            "artist-grid-scroll",
+            "artists",
+        ));
     });
 
     let artist_tracks = use_memo(move || {
@@ -393,7 +462,10 @@ pub fn Artist(
                     if !cfg!(target_os = "android") {
                         h1 { class: "text-3xl font-bold text-white mb-6 shrink-0", "{i18n::t(\"artists\")}" }
                     }
-                    div { class: "flex-1 min-h-0 overflow-y-auto pb-20",
+                    div {
+                        id: "artist-grid-scroll",
+                        class: "flex-1 min-h-0 overflow-y-auto pb-20",
+                        onscroll: move |e| crate::scroll_persist::save("artists", e.scroll_top()),
                         div { class: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8",
                             for (artist , cover_url) in artists() {
                                 {

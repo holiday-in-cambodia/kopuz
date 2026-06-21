@@ -91,12 +91,12 @@ pub fn Album(
 
     rsx! {
         div {
-            class: if cfg!(target_os = "android") { "px-4 pt-2 pb-28 absolute inset-0 flex flex-col" } else { "p-8 pb-24 absolute inset-0 flex flex-col" },
+            class: if cfg!(target_os = "android") { "px-4 pt-2 pb-28 absolute inset-0 flex flex-col" } else { "px-8 pt-8 absolute inset-0 flex flex-col" },
 
             if album_id.read().is_empty() {
-                div {
+                div { class: "flex-1 min-h-0 flex flex-col",
                     if !cfg!(target_os = "android") {
-                        h1 { class: "text-3xl font-bold text-white mb-6", "{i18n::t(\"all_albums\")}" }
+                        h1 { class: "text-3xl font-bold text-white mb-6 shrink-0", "{i18n::t(\"all_albums\")}" }
                     }
 
                     AlbumGrid {
@@ -229,8 +229,25 @@ fn AlbumGrid(
             .collect::<Vec<_>>()
     });
 
+    // Restore the grid scroll once after the albums first render; guarded so DB
+    // reactivity re-runs don't keep snapping the view back to the saved offset.
+    let mut scroll_restored = use_signal(|| false);
+    use_effect(move || {
+        if *scroll_restored.read() || albums().is_empty() {
+            return;
+        }
+        scroll_restored.set(true);
+        let _ = dioxus::document::eval(&crate::scroll_persist::restore_eval(
+            "album-grid-scroll",
+            "albums",
+        ));
+    });
+
     rsx! {
         div {
+            id: "album-grid-scroll",
+            class: "flex-1 min-h-0 overflow-y-auto pb-8",
+            onscroll: move |e| crate::scroll_persist::save("albums", e.scroll_top()),
             if albums().is_empty() {
                 p { class: "text-slate-500", "{i18n::t(\"no_albums_found\")}" }
             } else {
