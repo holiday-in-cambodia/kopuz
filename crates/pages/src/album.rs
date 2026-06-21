@@ -402,7 +402,24 @@ fn AlbumDetail(
                 if !want || db_has || id.trim().is_empty() {
                     return None;
                 }
-                src.fetch_album(&id)
+                // The id can be a raw browse id (Discover), a
+                // `ytmusic:album:MPRE…` (search rows with an album link), or a
+                // synthesized `ytmusic:album:<hash>` (search rows without one).
+                // Resolve each to a real browse id before fetching.
+                let browse_id = if let Some(bid) = ::server::ytmusic::search::album_browse_id(&id) {
+                    Some(bid)
+                } else if let Some((album, artist)) =
+                    ::server::ytmusic::search::synth_album_parts(&id)
+                {
+                    src.resolve_album_browse_id(&album, &artist)
+                        .await
+                        .ok()
+                        .flatten()
+                } else {
+                    None
+                };
+                let browse_id = browse_id?;
+                src.fetch_album(&browse_id)
                     .await
                     .ok()
                     .filter(|a| !a.tracks.is_empty())
