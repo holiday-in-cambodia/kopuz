@@ -3,9 +3,9 @@
   <img src="../crates/kopuz/assets/banner.png" alt="Logótipo do Kopuz" height="300"/>
   <h1>Kopuz</h1>
   <p>
-    Kopuz é uma aplicação moderna e leve de reprodutor de música construída com Rust
-    e o framework Dioxus. Fornece uma interface limpa e responsiva
-    para gerir e desfrutar da sua coleção de música local.
+    Kopuz é uma aplicação moderna e leve de reprodução de música construída em Rust
+    e com a framework Dioxus. Procura ainda fornecer uma interface limpa e responsiva
+    para que possa gerir e desfrutar da sua coleção de música local.
   </p>
   <a href="https://discord.gg/K6Bmzw2E4M">
     <img src="https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord">
@@ -37,13 +37,12 @@ isto seja mitológico e não histórico.
 
 ## Visão Geral
 
-O Kopuz permite-lhe pesquisar os seus diretórios locais por ficheiros de áudio,
-transmitir a partir do seu servidor Jellyfin ou Subsonic (Navidrome, etc.), ou
-ligar o **YouTube Music** ou o **SoundCloud** como backend de streaming,
-organizando automaticamente tudo numa biblioteca navegável. Pode navegar por
-artistas, álbuns, géneros, ou explorar as suas playlists personalizadas. A
-aplicação foi construída para desempenho e integração com o ambiente de
-trabalho, utilizando o poder do Rust.
+O Kopuz permite-lhe pesquisar os seus diretórios locais por ficheiros de áudio, transmitir a partir
+do seu servidor Jellyfin ou Subsonic (Navidrome, etc.), ou ligar o **YouTube Music**
+ou o **SoundCloud** como backend de streaming, de forma a organizar automaticamente tudo
+numa biblioteca navegável. Pode pesquisar por artistas, álbuns, géneros, ou
+explorar as suas próprias playlists. A aplicação foi construída para desempenho e
+integração com o seu ambiente de trabalho, utilizando o poder do Rust.
 
 A biblioteca, playlists, favoritos e definições são armazenados numa base de
 dados **SQLite** local (`kopuz.db`); a interface lê-a em tempo real para que as
@@ -60,13 +59,11 @@ próprias credenciais e os seus próprios favoritos.
 - **Integração Nativa**: Integra-se com os controlos de média do sistema no
   Linux (MPRIS), macOS (Now Playing / Remote Command Center) e Windows (System
   Media Transport Controls).
-- **Mini-Reprodutor**: Uma sobreposição compacta do reprodutor que pode alternar
-  a partir da barra inferior para uma vista mais pequena do que está a tocar
-  agora.
-- **Minimizar para a Bandeja**: Opcionalmente fechar para um ícone da bandeja do
-  sistema em vez de sair, para que a reprodução continue em segundo plano.
-  Alterne em **Definições**. Requer a biblioteca appindicator no Linux (ver
-  notas de Instalação).
+- **Mini-Reprodutor**: Uma sobreposição compacta do reprodutor que pode alternar a partir da barra inferior
+  para uma vista mais pequena do que está a tocar no momento.
+- **Minimizar para a Bandeja**: Opcionalmente fechar para um ícone da bandeja do sistema em vez de
+  fechar, para que a reprodução continue em segundo plano. Altere nas **Definições**.
+  Requer a biblioteca appindicator no Linux (ver notas de Instalação).
 - **Discord RPC**: RPC incorporado incluído!!!
 - **Múltiplos Backends**: Transmita a partir do seu servidor Jellyfin ou
   compatível com Subsonic (Navidrome funciona muito bem), ligue o YouTube Music
@@ -75,74 +72,57 @@ próprias credenciais e os seus próprios favoritos.
   `MediaSource`, e a interface adapta-se às capacidades de cada fonte (pesquisa,
   transferências, rádio, descoberta, sincronização de favoritos, etc.) em vez de
   codificar rigidamente o comportamento por serviço.
-- **YouTube Music**: Backend de streaming completo com uma página **Descobrir**
-  no estilo Spotify (músicas recomendadas, playlists, álbuns, artistas e
-  ambientes), perfis ricos de **artistas** (banner, melhores músicas, álbuns,
-  singles, artistas relacionados), navegação por álbuns/playlists, e **rádio de
-  mistura** ("iniciar rádio" a partir de qualquer faixa). Inicie sessão com a
-  sua conta para a sua biblioteca, Músicas Gostadas e playlists — ou execute-o
-  **anonimamente** (sem início de sessão) para navegar, pesquisar e reproduzir
-  faixas públicas. Veja
-  [Configuração do YouTube Music](#configuração-do-youtube-music).
-- **SoundCloud**: Backend de streaming com pesquisa, reprodução de faixas (MP3
-  progressivo e Go+ AAC/HLS), as suas **faixas gostadas** como favoritos,
-  playlists só de leitura, e gostar/não gostar. Adicionado através de um início
-  de sessão único no navegador num perfil isolado. Veja
+- **YouTube Music**: Backend de streaming completo com uma página **Descobrir** no estilo do Spotify (músicas recomendadas, playlists, álbuns, artistas e ambientes), perfis ricos de informação sobre os **artistas**
+  (banner, melhores músicas, álbuns, singles, artistas relacionados),
+  navegação por álbuns/playlists, e **rádio de mistura** ("iniciar rádio" a partir de qualquer faixa).
+  Inicie sessão com a sua conta para a sua biblioteca, Músicas Gostadas e playlists — ou
+  execute-o **anonimamente** (sem iniciar sessão) para navegar, pesquisar e reproduzir faixas públicas. Veja [Configuração do YouTube Music](#configuração-do-youtube-music).
+- **SoundCloud**: Backend de streaming com pesquisa, reprodução de faixas (MP3 progressivo
+  e Go+ AAC/HLS), as suas **faixas gostadas** como favoritos, playlists só de leitura, e
+  gostar/não gostar. Adicionado através de uma sessão única no navegador num perfil completamente isolado. Veja
   [Configuração do SoundCloud](#configuração-do-soundcloud).
 - **Suporte a Letras**: Desfrute de letras sincronizadas em tempo real e letras
   simples, completas com deslocamento automático para acompanhar a sua música.
 - **Favoritos**: Marque faixas localmente ou sincronize favoritos com o seu
   servidor Jellyfin/Subsonic.
-- **Playlists**: Crie e gestione as suas próprias playlists, adicione faixas
-  individuais ou álbuns inteiros de uma vez, e sincronize playlists com o seu
-  servidor.
-- **Navegação por Género**: Navegue pela sua biblioteca por género tanto para
-  música local como de servidor.
-- **Emblemas de Tipo de Ficheiro**: As faixas locais mostram um pequeno emblema
-  de formato (MP3, FLAC, WAV, etc.) nas linhas de faixas para que possa ver o
-  formato de origem de relance.
-- **Pesquisa**: Pesquise por artistas, álbuns e faixas com resultados em tempo
-  real.
-- **Registos de Audição**: As faixas contam as reproduções localmente para que
-  possa ver o que realmente ouve mais.
-- **Scrobbling**: Envie scrobbles para o ListenBrainz. Para utilizadores de
-  Jellyfin, [jellyfin-plugin-listenbrainz] é recomendado se usar vários
-  clientes.
-- **Suporte de Idiomas**: Interface disponível em Inglês, Russo, Alemão,
-  Francês, Espanhol, Turco, Ucraniano, Polaco, Árabe, Grego, Hebraico, Húngaro,
-  Indonésio, Japonês, Coreano, Romeno, Português do Brasil, Português Europeu,
-  Toki Pona e Chinês Simplificado com uma experiência simplificada para
-  adicionar novos idiomas.
-- **Alto Desempenho**: Processamento pesado em segundo plano e um scanner de
-  biblioteca otimizado garantem que a aplicação abre instantaneamente, funciona
-  sem problemas e salta rapidamente ficheiros previamente indexados.
-- **Limpeza Automática**: Remove automaticamente faixas em falta ou eliminadas
-  da sua biblioteca ao pesquisar novamente.
-- **Navegação Suave**: Desfrute de uma interface polida onde as posições de
-  scroll reiniciam corretamente ao navegar por diferentes vistas e páginas.
-- **Reduzir Animações**: Definição de acessibilidade para reduzir efeitos de
-  movimento se preferir uma interface mais calma.
-- **Equalizador**: Equalizador incorporado de 5 bandas com predefinições e
-  definições personalizadas para afinar o seu som.
-- **Crossfade**: Mistura transições de faixas para uma reprodução automática
-  mais suave entre músicas em compilações nativas de ambiente de trabalho. A
-  reprodução no navegador atualmente usa troca normal de faixas.
-- **Modo de Canal**: Alterne entre modos de saída `Estéreo`, `Mono`,
-  `Apenas Esquerdo`, `Apenas Direito`, e `Trocar E/D`.
+- **Playlists**: Crie e faça a gestão das suas próprias playlists, adicione faixas individuais ou
+  álbuns inteiros de uma vez, e sincronize playlists com o seu servidor.
+- **Navegação por Género**: Navegue pela sua biblioteca por género tanto para música local como do servidor.
+- **Emblemas de Tipo de Ficheiro**: As faixas locais mostram um pequeno emblema de formato (MP3, FLAC, WAV,
+  etc.) nas linhas de faixas para que possa ver o formato de origem de maneira rápida.
+- **Pesquisa**: Pesquise por artistas, álbuns e faixas com resultados em tempo real.
+- **Registos de Audição**: As faixas contam as reproduções localmente para que possa ver o que
+  realmente ouve mais.
+- **Scrobbling**: Envie scrobbles para o ListenBrainz. Para utilizadores de Jellyfin,
+  [jellyfin-plugin-listenbrainz] é recomendado usar vários clientes.
+- **Suporte de Idiomas**: Interface disponível em Inglês, Russo, Alemão, Francês,
+  Espanhol, Turco, Ucraniano, Polaco, Árabe, Grego, Hebraico, Húngaro,
+  Indonésio, Japonês, Coreano, Romeno, Português do Brasil, Português de Portugal, Toki Pona e
+  Chinês Simplificado com uma experiência simplificada para adicionar novos idiomas.
+- **Alto Desempenho**: Processamento pesado em segundo plano e um scanner de biblioteca otimizado garantem que a aplicação abre instantaneamente, funciona sem problemas e salta rapidamente ficheiros previamente indexados.
+- **Limpeza Automática**: Remove automaticamente faixas em falta ou eliminadas da sua
+  biblioteca ao pesquisar novamente.
+- **Navegação Suave**: Desfrute de uma interface polida onde as posições de scroll reiniciam
+  corretamente ao navegar por diferentes vistas e páginas.
+- **Reduzir Animações**: Definição de acessibilidade para reduzir efeitos de movimento se
+  preferir uma interface mais minimalista.
+- **Equalizador**: Equalizador incorporado de 5 bandas com predefinições e definições personalizadas para
+  afinar o seu som.
+- **Crossfade**: Mistura transições de faixas para uma reprodução automática mais suave entre
+  músicas em compilações nativas de ambiente de trabalho. A reprodução no navegador atualmente usa uma troca normal de faixas.
+- **Modo de Canal**: Alterne entre modos de saída `Estéreo`, `Mono`, `Apenas Esquerdo`, `Apenas Direito`,
+  e `Trocar E/D`.
 - **Integração com yt-dlp**: Transfira áudio diretamente do YouTube e outros
-  sites suportados via yt-dlp. Escolha o seu formato de saída (Melhor Áudio,
-  MP3, FLAC, WAV ou vídeo MP4). O FLAC não é recomendado pois o yt-dlp remuxa
-  áudio com perdas em vez de descodificar de uma fonte sem perdas. Suporta
-  SponsorBlock, divisão de capítulos, cookies, limitação de taxa e mais. Requer
-  `yt-dlp` instalado no seu sistema.
-- **Definições de Metadados**: Uma secção dedicada de Metadados nas Definições
-  permite-lhe controlar como as imagens de artistas são obtidas. Escolha entre
-  **Capa de Álbum** (usa a primeira capa de álbum como foto do artista,
-  predefinido) ou **Foto de Artista** (obtém imagens reais de artistas
-  diretamente do seu servidor Jellyfin ou Subsonic). Ao mudar para o modo Foto
-  de Artista, as imagens são obtidas do servidor em segundo plano assim que
-  abrir a página de Artistas. Se um artista não tiver uma foto dedicada no seu
-  servidor, a primeira capa de álbum é usada como alternativa para que nada
+  sites suportados via yt-dlp. Escolha o seu formato de saída (Melhor Áudio, MP3, FLAC,
+  WAV ou vídeo MP4). O FLAC não é recomendado pois o yt-dlp gera áudio com perdas
+  em vez de descodificar de uma fonte sem perdas. Suporta SponsorBlock, divisão de capítulos, cookies, limitação de taxa e mais. Requer `yt-dlp` instalado no seu sistema.
+- **Definições de Metadados**: Uma secção dedicada de Metadados nas Definições permite-lhe
+  controlar como as imagens de artistas são obtidas. Escolha entre **Capa de Álbum** (usa
+  a primeira capa de álbum como foto do artista, predefinido) ou **Foto de Artista**
+  (obtém imagens reais de artistas diretamente do seu servidor Jellyfin ou Subsonic).
+  Ao mudar para o modo Foto de Artista, as imagens são obtidas do servidor em
+  segundo plano assim que abrir a página de Artistas. Se um artista não tiver uma foto dedicada
+  no seu servidor, a primeira capa de álbum é usada como alternativa para que nada
   apareça em branco.
 
 ## Instalação
@@ -233,10 +213,10 @@ exemplo o KDE discover
 ### AppImage
 
 > [!IMPORTANT]
-> O AppImage requer `webkit2gtk-4.1` e `gtk3` instalados no seu sistema. Essas
-> dependências não estão incluídas. O ícone da bandeja do sistema adicionalmente
+> O AppImage requer ambos o `webkit2gtk-4.1` e o `gtk3` instalados no seu sistema.
+> Essas dependências não estão incluídas. O ícone da bandeja do sistema adicionalmente
 > precisa da biblioteca **appindicator** (ex. `libayatana-appindicator`); sem
-> ela o Kopuz funciona bem mas não mostra ícone da bandeja.
+> ela o Kopuz funciona bem mas não mostra o ícone da bandeja.
 >
 > Na maioria das distribuições com um ambiente de trabalho moderno, estas já
 > estão presentes. Terá de as instalar manualmente se ainda não estiverem
@@ -374,10 +354,9 @@ No **Windows** (AppData):
 - `%LOCALAPPDATA%\temidaradev\kopuz\cache\offline_tracks\` - faixas transferidas
 
 > [!NOTE]
-> A atualizar a partir de uma versão mais antiga? No primeiro arranque o Kopuz
-> importa o seu existente `library.json` e `playlists.json` para `kopuz.db`,
-> deixando cópias de segurança `*.json.bak` para trás. Os ficheiros JSON antigos
-> deixam de ser lidos depois disso.
+> A atualizar a partir de uma versão mais antiga? No primeiro arranque o Kopuz importa o seu já existente
+> `library.json` e `playlists.json` para o `kopuz.db`, deixando cópias de segurança `*.json.bak`
+> para trás. Os ficheiros JSON antigos deixam de ser lidos depois disso.
 
 Se as capas não estiverem a aparecer ou a biblioteca parecer estranha, basta
 apagar a pasta de cache e clicar em pesquisar novamente.
@@ -413,34 +392,31 @@ O diálogo de configuração oferece dois métodos:
   Premium não podem ser reproduzidas anonimamente.
 
 > [!NOTE]
-> No **Windows**, o início de sessão com navegador está atualmente desativado —
-> a página de contas da Google aparece em branco dentro do perfil isolado. Os
-> utilizadores de Windows obtêm o modo anónimo automaticamente. O início de
-> sessão funciona no Linux e macOS. (Rastreado como `TODO(windows-signin)` em
-> `crates/server/src/ytmusic/isolated_profile.rs`.)
+> No **Windows**, o início de sessão com navegador está atualmente desativado — a página de contas da Google
+> aparece em branco dentro do perfil isolado. Os utilizadores de Windows obtêm o modo anónimo
+> automaticamente. O início de sessão funciona no Linux e macOS. (Seguido como
+> `TODO(windows-signin)` em `crates/server/src/ytmusic/isolated_profile.rs`.)
 
 ### Faixas Premium
 
 As faixas bloqueadas pelo Music Premium recorrem a uma resolução local
-[`yt-dlp`](https://github.com/yt-dlp/yt-dlp) quando o caminho principal retorna
-`UNPLAYABLE`, por isso ter `yt-dlp` instalado ajuda para essas. O modo anónimo
-não pode reproduzir conteúdo exclusivo do Premium.
+[`yt-dlp`](https://github.com/yt-dlp/yt-dlp) quando o caminho principal
+retorna `UNPLAYABLE`, por isso ter o `yt-dlp` instalado pode ajudar nessas situações. O modo anónimo não pode reproduzir conteúdo exclusivo do Premium.
 
 ## Configuração do SoundCloud
 
-O Kopuz pode usar o SoundCloud como backend de streaming. Adicione-o a partir de
-**Definições → Servidores de média → Adicionar → SoundCloud**.
+O Kopuz consegue ainda usar o SoundCloud como backend de streaming. Adicione-o a partir de **Definições → Servidores de
+média → Adicionar → SoundCloud**.
 
-Não há URL ou palavra-passe para digitar. O Kopuz abre `soundcloud.com/signin`
-num **perfil de navegador isolado** (uma sessão fresca e separada; a sua
-navegação normal nunca é tocada), espera que inicie sessão e obtém o
-`oauth_token` da sessão. Escolha qual navegador da família Chromium instalado
-usar (Chrome, Chromium, Brave, Edge ou Vivaldi).
+Não existe URL ou palavra-passe para digitar. O Kopuz abre o endereço `soundcloud.com/signin` num
+**perfil de navegador isolado** (uma sessão limpa e completamente separada; a navegação normal
+nunca é tocada), apenas agurda que inicie sessão e obtém o `oauth_token` da sessão.
+Escolha qual navegador da família Chromium instalado usar (Chrome, Chromium, Brave,
+Edge ou Vivaldi).
 
-Depois de iniciar sessão obtém pesquisa, reprodução de faixas (MP3 progressivo
-mais streams Go+ AAC/HLS), as suas **faixas gostadas** como favoritos, acesso só
-de leitura às suas playlists, e gostar/não gostar. Remover a fonte limpa o seu
-perfil isolado.
+Depois de iniciar sessão tem acesso à pesquisa, reprodução de faixas (MP3 progressivo mais streams Go+ AAC/HLS),
+às suas **faixas gostadas** como favoritos, acesso só de leitura às suas
+playlists, e a funcionalidade de gostar ou não gostar das faixas disponiveis. Remover a fonte limpa o seu perfil isolado.
 
 ## Registos e Debugging
 
