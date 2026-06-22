@@ -769,6 +769,19 @@ impl PlayerController {
                         })
                         .await;
 
+                        if let Err(_) | Ok(Err(_)) = &source_res {
+                            if *play_generation.read() == current_gen {
+                                let msg = match &source_res {
+                                    Ok(Err(e)) => format!("Couldn't load this track:\n{e}"),
+                                    _ => "Playback failed unexpectedly".to_string(),
+                                };
+                                playback_error.set(Some(msg));
+                                is_loading.set(false);
+                                skip_in_progress.set(false);
+                            }
+                            return;
+                        }
+
                         if let Ok(Ok((source, hint))) = source_res {
                             if *play_generation.read() == current_gen {
                                 let meta = NowPlayingMeta {
