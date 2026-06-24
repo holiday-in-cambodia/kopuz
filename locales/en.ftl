@@ -154,8 +154,8 @@ maximize = Maximize
 close = Close
 mini_player = Mini player
 restore_full_player = Restore full player
-enabled = ENABLED
-disabled = DISABLED
+enabled = Enabled
+disabled = Disabled
 play = Play
 shuffle = Shuffle
 
@@ -177,8 +177,8 @@ back_to_playlists = Back to Playlists
 back_to_browse = Back to Browse
 back = Back
 back_to_previous = Back To
-up_next = UP NEXT
-lyrics = LYRICS
+up_next = Up Next
+lyrics = Lyrics
 
 # Player/Media
 loading_lyrics = Loading lyrics...
@@ -220,7 +220,7 @@ lastfm_api_secret_placeholder = Enter your Last.fm API Secret
 album_not_found = Album not found
 playlist_not_found = Playlist not found
 no_playlists_found = No playlists found
-no_playlists_yet = No playlists yet. Add songs from your library!
+no_playlists_yet = No playlists yet. Add songs from your library.
 add_music_to_get_started = Add music to get started
 
 # Data Labels
@@ -387,8 +387,8 @@ folder_name = Folder name...
 new_folder = New Folder
 remove_from_folder = Remove from Folder
 back_behavior = Back Button Behavior
-back_behavior_rewind = REWIND → PREV
-back_behavior_always_prev = ALWAYS PREV
+back_behavior_rewind = Rewind, then previous
+back_behavior_always_prev = Always previous
 
 metadata = Metadata
 auto_fetch_covers = Auto-fetch album covers
@@ -450,4 +450,4 @@ path = Path
 add_photo = Add photo
 change_photo = Change photo
 remove_photo = Remove photo
-metadata_edit_warning = Empty fields remove that tag. Writes directly to the file — no undo.
+metadata_edit_warning = Empty fields remove that tag. Writes directly to the file. No undo.

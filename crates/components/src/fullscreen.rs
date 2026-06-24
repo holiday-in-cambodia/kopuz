@@ -230,7 +230,7 @@ fn TrackMetadata(
 
     rsx! {
         div {
-            class: "rounded-2xl overflow-hidden mb-8",
+            class: "rounded-lg overflow-hidden mb-8",
             style: "width: 100%; max-width: 520px; aspect-ratio: 1/1; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.55);",
             {
                 let cover = current_song_cover_url.read();

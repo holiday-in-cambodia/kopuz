@@ -806,7 +806,7 @@ fn OptionsPanel(config: Signal<AppConfig>) -> Element {
         div { class: "bg-white/5 border border-white/10 rounded-xl p-5 mb-5 space-y-5",
 
             div {
-                p { class: "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3",
+                p { class: "text-xs font-semibold text-slate-400 mb-3",
                     "{i18n::t(\"ytdlp_section_embed\")}"
                 }
                 div { class: "grid grid-cols-2 gap-x-6 gap-y-2",
@@ -846,7 +846,7 @@ fn OptionsPanel(config: Signal<AppConfig>) -> Element {
             div { class: "h-px bg-white/5" }
 
             div {
-                p { class: "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3",
+                p { class: "text-xs font-semibold text-slate-400 mb-3",
                     "{i18n::t(\"ytdlp_section_write\")}"
                 }
                 div { class: "grid grid-cols-2 gap-x-6 gap-y-2",
@@ -892,7 +892,7 @@ fn OptionsPanel(config: Signal<AppConfig>) -> Element {
             div { class: "h-px bg-white/5" }
 
             div {
-                p { class: "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3",
+                p { class: "text-xs font-semibold text-slate-400 mb-3",
                     "{i18n::t(\"ytdlp_section_postprocess\")}"
                 }
                 div { class: "grid grid-cols-2 gap-x-6 gap-y-2 mb-4",
@@ -944,7 +944,7 @@ fn OptionsPanel(config: Signal<AppConfig>) -> Element {
             div { class: "h-px bg-white/5" }
 
             div {
-                p { class: "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3",
+                p { class: "text-xs font-semibold text-slate-400 mb-3",
                     "{i18n::t(\"ytdlp_section_behavior\")}"
                 }
                 div { class: "grid grid-cols-2 gap-x-6 gap-y-2 mb-4",
