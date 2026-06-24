@@ -160,6 +160,7 @@ min = 󱥫
 
 # Error Messages
 invalid_server_url = 󱤿URL 󱤧󱤍
+server_name_required = 󱥂󱥌 󱤧󱥢
 username_and_password_required = 󱥞󱥄󱥌󱤉󱥂󱤉󱤥
 login_failed = 󱤖󱤧󱤍󱦝{ $error }
 error_server_not_configured = 󱥌󱤧󱤍󱤇󱤓󱤂󱤉󱤥

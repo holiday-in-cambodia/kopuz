@@ -235,6 +235,7 @@ min = min
 
 # Error Messages
 invalid_server_url = URL peladen tidak valid
+server_name_required = Nama server wajib diisi
 username_and_password_required = Nama pengguna dan kata sandi diperlukan
 login_failed = Gagal masuk: { $error }
 error_server_not_configured = Peladen belum dikonfigurasikan atau kredensial tidak ada

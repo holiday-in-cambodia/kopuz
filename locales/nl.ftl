@@ -235,6 +235,7 @@ min = min
 
 # Error Messages
 invalid_server_url = Ongeldige server-URL
+server_name_required = Servernaam is verplicht
 username_and_password_required = Gebruikersnaam en wachtwoord zijn vereist
 login_failed = Inloggen mislukt: { $error }
 error_server_not_configured = Server niet geconfigureerd of inloggegevens ontbreken

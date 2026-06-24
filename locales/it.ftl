@@ -235,6 +235,7 @@ min = min
 
 # Error Messages
 invalid_server_url = URL del server non valido
+server_name_required = Il nome del server è obbligatorio
 username_and_password_required = Sono necessari nome utente e password
 login_failed = Errore di accesso: { $error }
 error_server_not_configured = Server non configurato o credenziali mancanti

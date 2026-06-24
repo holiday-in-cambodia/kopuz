@@ -164,6 +164,7 @@ min = דק׳
 
 # Error Messages
 invalid_server_url = כתובת שרת לא תקינה
+server_name_required = נדרש שם שרת
 username_and_password_required = נדרש שם משתמש וסיסמה
 login_failed = ההתחברות נכשלה: { $error }
 error_server_not_configured = השרת לא מוגדר או שחסרים פרטי התחברות

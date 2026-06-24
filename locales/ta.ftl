@@ -235,6 +235,7 @@ min = நிமி
 
 # Error Messages
 invalid_server_url = தவறான சேவையக URL
+server_name_required = சேவையக பெயர் தேவை
 username_and_password_required = பயனர்பெயரும் கடவுச்சொல்லும் தேவை
 login_failed = உள்நுழைவு தோல்வியடைந்தது: { $error }
 error_server_not_configured = சேவையகம் கட்டமைக்கப்படவில்லை அல்லது சான்றுகள் இல்லை

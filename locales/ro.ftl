@@ -164,6 +164,7 @@ min = min
 
 # Error Messages
 invalid_server_url = URL server nevalid
+server_name_required = Numele serverului este obligatoriu
 username_and_password_required = Utilizatorul și parola sunt obligatorii
 login_failed = Autentificare eșuată: { $error }
 error_server_not_configured = Serverul nu este configurat sau lipsesc credențialele

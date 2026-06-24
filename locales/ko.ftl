@@ -164,6 +164,7 @@ min = 분
 
 # Error Messages
 invalid_server_url = 잘못된 서버 URL입니다
+server_name_required = 서버 이름이 필요합니다
 username_and_password_required = 사용자 이름과 비밀번호가 필요합니다
 login_failed = 로그인 실패: { $error }
 error_server_not_configured = 서버가 설정되지 않았거나 인증 정보가 없습니다

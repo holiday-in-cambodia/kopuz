@@ -164,6 +164,7 @@ min = хв
 
 # Error Messages
 invalid_server_url = Невірна адреса сервера
+server_name_required = Потрібна назва сервера
 username_and_password_required = Потрібні ім'я користувача та пароль
 login_failed = Помилка входу: { $error }
 error_server_not_configured = Сервер невірно налаштований або облікові дані відсутні

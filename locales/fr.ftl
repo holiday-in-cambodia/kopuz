@@ -160,6 +160,7 @@ min = Minute
 
 # Error Messages
 invalid_server_url = URL Serveur Invalid
+server_name_required = Le nom du serveur est requis
 username_and_password_required = Nom d'utilisateur Et Mot de passe Réquis !
 login_failed = Connexion fail: { $error }
 error_server_not_configured = Serveur non configurée ou credential manquant

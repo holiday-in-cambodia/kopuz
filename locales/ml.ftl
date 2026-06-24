@@ -235,6 +235,7 @@ min = മിനിറ്റ്
 
 # Error Messages
 invalid_server_url = അസാധുവായ സെർവർ URL
+server_name_required = സെർവർ നാമം ആവശ്യമാണ്
 username_and_password_required = ഉപയോക്തൃനാമവും പാസ്‌വേഡും ആവശ്യമാണ്
 login_failed = ലോഗിൻ പരാജയപ്പെട്ടു: { $error }
 error_server_not_configured = സെർവർ ക്രമീകരിച്ചിട്ടില്ല അല്ലെങ്കിൽ ക്രെഡൻഷ്യലുകൾ കാണുന്നില്ല

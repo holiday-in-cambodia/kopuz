@@ -164,6 +164,7 @@ min = dk
 
 # Error Messages
 invalid_server_url = Geçersiz sunucu URL'si
+server_name_required = Sunucu adı gerekli
 username_and_password_required = Kullanıcı adı ve şifre gereklidir
 login_failed = Giriş başarısız: { $error }
 error_server_not_configured = Sunucu yapılandırılmamış veya kimlik bilgileri eksik

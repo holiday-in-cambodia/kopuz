@@ -164,6 +164,7 @@ min = دقيقة
 
 # Error Messages
 invalid_server_url = عنوان خادم غير صالح
+server_name_required = اسم الخادم مطلوب
 username_and_password_required = اسم المستخدم وكلمة المرور مطلوبان
 login_failed = فشل تسجيل الدخول: { $error }
 error_server_not_configured = الخادم غير مهيأ أو بيانات الاعتماد مفقودة

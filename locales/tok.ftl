@@ -164,6 +164,7 @@ min = min
 
 # Error Messages
 invalid_server_url = nasin URL li ike
+server_name_required = nimi pana li wile
 username_and_password_required = sina o pana e nimi e len
 login_failed = kama li ike: { $error }
 error_server_not_configured = pana li ike, anu pana li jo ala e len

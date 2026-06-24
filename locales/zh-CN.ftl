@@ -164,6 +164,7 @@ min = 分钟
 
 # Error Messages
 invalid_server_url = 无效的服务器地址
+server_name_required = 需要服务器名称
 username_and_password_required = 用户名和密码为必填项
 login_failed = 登录失败：{ $error }
 error_server_not_configured = 服务器未配置或缺少凭据

@@ -165,6 +165,7 @@ min = мин
 
 # Error Messages
 invalid_server_url = Недопустимый URL сервера
+server_name_required = Требуется имя сервера
 username_and_password_required = Укажите имя пользователя и пароль
 login_failed = Ошибка входа: { $error }
 error_server_not_configured = Сервер не настроен или учётные данные отсутствуют

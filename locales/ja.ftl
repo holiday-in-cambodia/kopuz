@@ -164,6 +164,7 @@ min = 分
 
 # Error Messages
 invalid_server_url = 無効なサーバーURL
+server_name_required = サーバー名は必須です
 username_and_password_required = ユーザー名とパスワードが必要です
 login_failed = ログイン失敗: { $error }
 error_server_not_configured = サーバーが設定されていないか、認証情報がありません

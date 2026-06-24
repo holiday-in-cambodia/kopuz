@@ -164,6 +164,7 @@ min = perc
 
 # Error Messages
 invalid_server_url = Érvénytelen szerver URL
+server_name_required = A kiszolgáló neve kötelező
 username_and_password_required = Felhasználónév és jelszó megadása kötelező
 login_failed = Sikertelen bejelentkezés: { $error }
 error_server_not_configured = A szerver nincs konfigurálva, vagy hiányoznak a hitelesítő adatok

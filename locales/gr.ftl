@@ -164,6 +164,7 @@ min = λεπτ
 
 # Error Messages
 invalid_server_url = Μη έγκυρο URL διακομιστή
+server_name_required = Απαιτείται όνομα διακομιστή
 username_and_password_required = Απαιτείται όνομα χρήστη και κωδικός
 login_failed = Αποτυχία σύνδεσης: { $error }
 error_server_not_configured = Ο διακομιστής δεν έχει ρυθμιστεί ή λείπουν τα διαπιστευτήρια

@@ -235,6 +235,7 @@ min = min
 
 # Error Messages
 invalid_server_url = Hindi valid na URL ng server
+server_name_required = Kinakailangan ang pangalan ng server
 username_and_password_required = Kailangan ang username at password
 login_failed = Nabigo ang pag-login: { $error }
 error_server_not_configured = Hindi naka-configure ang server o kulang ang credentials

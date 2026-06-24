@@ -235,6 +235,7 @@ min = phút
 
 # Error Messages
 invalid_server_url = URL máy chủ không hợp lệ
+server_name_required = Cần có tên máy chủ
 username_and_password_required = Cần có tên người dùng và mật khẩu
 login_failed = Đăng nhập thất bại: { $error }
 error_server_not_configured = Máy chủ chưa được cấu hình hoặc thiếu thông tin đăng nhập
