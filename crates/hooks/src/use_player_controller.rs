@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 use utils;
 
+use crate::playback_ref::{PlaybackItemRef, ResolvedStreamRef};
+
 #[cfg(not(target_arch = "wasm32"))]
 use player::decoder;
 
@@ -361,21 +363,13 @@ impl PlayerController {
             }
             let crossfade_duration =
                 Duration::from_secs(self.config.peek().crossfade_seconds as u64);
-            let scheme = path_str
-                .split(':')
-                .next()
-                .unwrap_or_default()
-                .to_ascii_lowercase();
-            let is_radio_item = scheme.as_str() == "radio";
-            let is_server_item = matches!(
-                scheme.as_str(),
-                "jellyfin" | "subsonic" | "custom" | "ytmusic"
-            );
+            let item_ref = PlaybackItemRef::parse(&path_str);
+            let is_radio_item = item_ref.is_radio();
+            let is_server_item = item_ref.is_server();
 
             if is_server_item || is_radio_item {
-                let parts: Vec<&str> = path_str.split(':').collect();
-                let id = parts.get(1).unwrap_or(&"").to_string();
-                let stream_id = parts.get(2).unwrap_or(&"").to_string();
+                let id = item_ref.primary_id().unwrap_or_default().to_string();
+                let stream_id = item_ref.stream_id().unwrap_or_default().to_string();
 
                 // Check offline cache first
                 #[cfg(not(target_arch = "wasm32"))]
@@ -516,7 +510,7 @@ impl PlayerController {
                                 )
                                 .unwrap_or_default();
 
-                                (format!("__PENDING:{id}"), cover_url)
+                                (ResolvedStreamRef::pending_marker(&id), cover_url)
                             }
                             MusicService::Subsonic | MusicService::Custom => {
                                 // Stream resolves in the spawn below; build only the
@@ -548,7 +542,7 @@ impl PlayerController {
                                             .ok()
                                         })
                                         .unwrap_or_default();
-                                    (format!("__PENDING:{id}"), cover_url)
+                                    (ResolvedStreamRef::pending_marker(&id), cover_url)
                                 } else {
                                     (String::new(), String::new())
                                 }
@@ -572,13 +566,13 @@ impl PlayerController {
                                     90,
                                 )
                                 .unwrap_or_default();
-                                (format!("__PENDING:{id}"), cover_url)
+                                (ResolvedStreamRef::pending_marker(&id), cover_url)
                             }
                             // SoundCloud also resolves its stream async (progressive
                             // MP3 / HLS) via the source; the cover is the plain
                             // artwork URL already in `track.cover`.
                             MusicService::SoundCloud => (
-                                format!("__PENDING:{id}"),
+                                ResolvedStreamRef::pending_marker(&id),
                                 track.cover.clone().unwrap_or_default(),
                             ),
                         })
@@ -629,72 +623,74 @@ impl PlayerController {
 
                     self.is_loading.set(true);
 
-                    let is_radio = track.id.uid().starts_with("radio:");
+                    let is_radio = PlaybackItemRef::parse(&track.id.uid()).is_radio();
 
                     #[cfg(not(target_arch = "wasm32"))]
                     spawn(async move {
-                        let (stream_url, yt_format, yt_user_agent) = if let Some(item_id) =
-                            stream_url.strip_prefix("__PENDING:")
-                        {
-                            // The one genuinely per-source op: resolve the playable
-                            // stream through the active source's backend (a URL for
-                            // Jellyfin/Subsonic, a deciphered stream for YT).
-                            let source = active_source.peek().clone();
-                            match source.resolve_stream(item_id).await {
-                                Ok(info) => {
-                                    // Stale-resolve guard: don't stamp duration / mutate
-                                    // queue if the user clicked another track while we
-                                    // were awaiting the resolve. (YT carries probed
-                                    // duration/bitrate; other sources leave them None.)
-                                    if *play_generation.read() == current_gen
-                                        && let Some(secs) = info.duration_secs
-                                        && secs > 0
-                                    {
-                                        if let Some(p) = phys_idx
-                                            && let Some(t) = queue_for_yt.write().get_mut(p)
-                                        {
-                                            t.duration = secs;
+                        let (stream_url, yt_format, yt_user_agent) =
+                            match ResolvedStreamRef::parse(&stream_url) {
+                                ResolvedStreamRef::Pending(item_id) => {
+                                    // The one genuinely per-source op: resolve the playable
+                                    // stream through the active source's backend (a URL for
+                                    // Jellyfin/Subsonic, a deciphered stream for YT).
+                                    let source = active_source.peek().clone();
+                                    match source.resolve_stream(item_id).await {
+                                        Ok(info) => {
+                                            // Stale-resolve guard: don't stamp duration / mutate
+                                            // queue if the user clicked another track while we
+                                            // were awaiting the resolve. (YT carries probed
+                                            // duration/bitrate; other sources leave them None.)
+                                            if *play_generation.read() == current_gen
+                                                && let Some(secs) = info.duration_secs
+                                                && secs > 0
+                                            {
+                                                if let Some(p) = phys_idx
+                                                    && let Some(t) = queue_for_yt.write().get_mut(p)
+                                                {
+                                                    t.duration = secs;
+                                                }
+                                                if *current_queue_index_for_yt.peek() == idx {
+                                                    current_song_duration_for_yt.set(secs);
+                                                }
+                                            }
+                                            // Surface the resolved bitrate (kbps) for the debug
+                                            // readout; write it back onto the queue Track too (YT
+                                            // tracks carry no bitrate metadata) so a re-hydrate
+                                            // doesn't reset it.
+                                            if *play_generation.read() == current_gen
+                                                && let Some(bps) = info.bitrate
+                                            {
+                                                let kbps = (bps / 1000) as u16;
+                                                if let Some(p) = phys_idx
+                                                    && let Some(t) = queue_for_yt.write().get_mut(p)
+                                                {
+                                                    t.bitrate = kbps;
+                                                }
+                                                if *current_queue_index_for_yt.peek() == idx {
+                                                    current_song_bitrate_for_yt.set(kbps);
+                                                }
+                                            }
+                                            (info.url, info.format, info.user_agent)
                                         }
-                                        if *current_queue_index_for_yt.peek() == idx {
-                                            current_song_duration_for_yt.set(secs);
+                                        Err(e) => {
+                                            // Same guard: a stale error must NOT post a banner
+                                            // for or clear is_loading on the user's new track.
+                                            if *play_generation.read() != current_gen {
+                                                return;
+                                            }
+                                            tracing::error!(error = %e, "stream URL resolve failed");
+                                            playback_error.set(Some(format!(
+                                                "Couldn't load this track:\n{e}"
+                                            )));
+                                            is_loading.set(false);
+                                            skip_in_progress.set(false);
+                                            return;
                                         }
                                     }
-                                    // Surface the resolved bitrate (kbps) for the debug
-                                    // readout; write it back onto the queue Track too (YT
-                                    // tracks carry no bitrate metadata) so a re-hydrate
-                                    // doesn't reset it.
-                                    if *play_generation.read() == current_gen
-                                        && let Some(bps) = info.bitrate
-                                    {
-                                        let kbps = (bps / 1000) as u16;
-                                        if let Some(p) = phys_idx
-                                            && let Some(t) = queue_for_yt.write().get_mut(p)
-                                        {
-                                            t.bitrate = kbps;
-                                        }
-                                        if *current_queue_index_for_yt.peek() == idx {
-                                            current_song_bitrate_for_yt.set(kbps);
-                                        }
-                                    }
-                                    (info.url, info.format, info.user_agent)
                                 }
-                                Err(e) => {
-                                    // Same guard: a stale error must NOT post a banner
-                                    // for or clear is_loading on the user's new track.
-                                    if *play_generation.read() != current_gen {
-                                        return;
-                                    }
-                                    tracing::error!(error = %e, "stream URL resolve failed");
-                                    playback_error
-                                        .set(Some(format!("Couldn't load this track:\n{e}")));
-                                    is_loading.set(false);
-                                    skip_in_progress.set(false);
-                                    return;
-                                }
-                            }
-                        } else {
-                            (stream_url, None, None)
-                        };
+                                ResolvedStreamRef::SoundCloudHls(_)
+                                | ResolvedStreamRef::Direct(_) => (stream_url, None, None),
+                            };
                         let yt_format_for_blocking = yt_format;
                         let stream_url_for_blocking = stream_url.clone();
                         let yt_ua_for_blocking = yt_user_agent.clone();
@@ -740,8 +736,8 @@ impl PlayerController {
                                     hint.with_extension(fmt.extension());
                                     Ok::<_, std::io::Error>((source, hint))
                                 }
-                            } else if let Some(hls_url) =
-                                stream_url_for_blocking.strip_prefix("__SC_HLS:")
+                            } else if let ResolvedStreamRef::SoundCloudHls(hls_url) =
+                                ResolvedStreamRef::parse(&stream_url_for_blocking)
                             {
                                 // SoundCloud Go+ AAC: assemble the HLS playlist's
                                 // fMP4 segments into one in-memory buffer Symphonia
@@ -833,18 +829,13 @@ impl PlayerController {
                                 is_playing.set(true);
                                 skip_in_progress.set(false);
 
-                                let is_radio_item =
-                                    track.id.uid().starts_with("radio:");
-                                let path_lossy = track.id.uid().to_string();
-                                let parts: Vec<&str> = path_lossy.split(':').collect();
-                                let (station_id, stream_id) = if is_radio_item {
-                                    (
-                                        parts.get(1).unwrap_or(&"").to_string(),
-                                        parts.get(2).unwrap_or(&"").to_string(),
-                                    )
-                                } else {
-                                    (String::new(), String::new())
-                                };
+                                let item_uid = track.id.uid();
+                                let item_ref = PlaybackItemRef::parse(&item_uid);
+                                let is_radio_item = item_ref.is_radio();
+                                let station_id =
+                                    item_ref.primary_id().unwrap_or_default().to_string();
+                                let stream_id =
+                                    item_ref.stream_id().unwrap_or_default().to_string();
 
                                 if let Some(task) = radio_task.take() {
                                     task.cancel();
@@ -1846,7 +1837,7 @@ impl PlayerController {
         let idx = *self.current_queue_index.peek();
         let is_radio = self
             .get_track_at(idx)
-            .is_some_and(|t| t.id.uid().starts_with("radio:"));
+            .is_some_and(|t| PlaybackItemRef::parse(&t.id.uid()).is_radio());
 
         if is_radio {
             self.player.write().stop_for_transition();
@@ -1860,7 +1851,7 @@ impl PlayerController {
         let idx = *self.current_queue_index.peek();
         let is_radio = self
             .get_track_at(idx)
-            .is_some_and(|t| t.id.uid().starts_with("radio:"));
+            .is_some_and(|t| PlaybackItemRef::parse(&t.id.uid()).is_radio());
 
         if is_radio || !self.player.peek().can_resume() {
             if let Some(track) = self.get_track_at(idx) {

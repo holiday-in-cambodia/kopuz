@@ -3,6 +3,7 @@
 
 pub mod db_reactivity;
 pub mod debug_db;
+pub mod playback_ref;
 pub mod source_switch;
 pub mod use_db_queries;
 pub mod use_player_controller;
