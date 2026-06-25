@@ -1,1 +1,1 @@
-locales/**/*.ftl linguist-generated=true
+crates/i18n/locales/**/*.ftl linguist-generated=true
