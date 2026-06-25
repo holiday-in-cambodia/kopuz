@@ -24,6 +24,7 @@ use tracing::Instrument;
 use windows::Win32::Foundation::HWND;
 
 mod app_db;
+mod app_lifecycle;
 #[cfg(all(not(target_arch = "wasm32"), not(target_os = "android")))]
 mod artwork_protocol;
 #[cfg(all(not(target_arch = "wasm32"), not(target_os = "android")))]
@@ -312,47 +313,7 @@ fn App() -> Element {
     // first would leave the final queue/config persists (and any failure
     // warnings) out of latest.log and the trace.
 
-    // Native YouTube sig/n deciphering runs in this WebView's own
-    // JavaScriptCore (issue #349): register a JS engine that forwards each
-    // solver program to this task, which executes it via `document::eval` and
-    // returns the printed result. No external JS runtime, no yt-dlp, no
-    // botguard — the decipher path uses the engine already loaded for the UI.
-    use_hook(|| {
-        let (engine, mut rx) = server::ytmusic::decipher::webview_channel();
-        if server::ytmusic::decipher::set_engine(engine).is_err() {
-            tracing::warn!("yt-decipher engine already registered — webview solver not active");
-        }
-        spawn(async move {
-            while let Some(req) = rx.recv().await {
-                // Always send exactly one message back: the printed result, or
-                // the JS error prefixed with a NUL marker. Without the
-                // try/catch a throwing solver would never call `dioxus.send`
-                // and `recv()` below would hang forever, stalling playback.
-                let wrapped = format!(
-                    "globalThis.print=function(s){{dioxus.send(s);}};\
-                     try{{{}}}catch(e){{dioxus.send('\\u0000ERR'+(e&&e.stack?e.stack:e));}}",
-                    req.program
-                );
-                // Bound the wait — a non-returning solver script must not stall
-                // the decipher queue forever.
-                let mut eval = dioxus::document::eval(&wrapped);
-                let result = match tokio::time::timeout(
-                    std::time::Duration::from_secs(20),
-                    eval.recv::<String>(),
-                )
-                .await
-                {
-                    Ok(Ok(s)) => match s.strip_prefix('\u{0}') {
-                        Some(err) => Err(format!("webview JS: {}", err.trim_start_matches("ERR"))),
-                        None => Ok(s),
-                    },
-                    Ok(Err(e)) => Err(format!("webview eval recv: {e}")),
-                    Err(_) => Err("webview decipher timed out".to_string()),
-                };
-                let _ = req.reply.send(result);
-            }
-        });
-    });
+    app_lifecycle::use_webview_decipher_engine();
 
     // The whole-Library signal is GONE — pages/components read the DB through
     // query hooks, and every track self-resolves its cover via the cover seam
@@ -477,7 +438,7 @@ fn App() -> Element {
     let mut trigger_rescan = use_signal(|| 0);
     // Applies detached yt-dlp completions (history + rescan) in this scope —
     // the job drivers outlive the downloads page and can't write these.
-    pages::ytdlp::use_ytdlp_completion_sink(config, trigger_rescan);
+    pages::ytdlp_jobs::use_ytdlp_completion_sink(config, trigger_rescan);
     let mut last_scan_key = use_signal(|| None::<String>);
     let mut scan_current_file = use_signal(|| Option::<String>::None);
     let current_playing = use_signal(|| 0);
@@ -1083,74 +1044,7 @@ fn App() -> Element {
         }
     });
 
-    let mut is_offline = use_signal(|| false);
-    use_context_provider(|| is_offline);
-
-    // Global connectivity probe — a source-agnostic "is there internet" check,
-    // NOT tied to any media server (pinging a Jellyfin endpoint says nothing
-    // about the internet and is meaningless for other services). Hits a neutral
-    // host (Cloudflare 1.1.1.1); any response = online, a connect/DNS/timeout
-    // error = offline. Debounced (2 misses before flipping) and only while a
-    // server is configured — a pure-local setup needs no network. This only
-    // SETS `is_offline`; nothing auto-switches the source (offline mode is gone,
-    // Local is the default). Per-server reachability (server down but internet
-    // up) is surfaced separately by the operations that actually fail.
-    #[cfg(not(target_arch = "wasm32"))]
-    use_future(move || async move {
-        let Ok(client) = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(5))
-            .build()
-        else {
-            return;
-        };
-        let mut misses: u8 = 0;
-        loop {
-            if config.peek().server.is_none() {
-                if *is_offline.peek() {
-                    is_offline.set(false);
-                }
-                misses = 0;
-                utils::sleep(std::time::Duration::from_secs(30)).await;
-                continue;
-            }
-            let online = client
-                .get("https://1.1.1.1")
-                .send()
-                .instrument(tracing::info_span!("net.connectivity"))
-                .await
-                .is_ok();
-            if online {
-                misses = 0;
-                if *is_offline.peek() {
-                    is_offline.set(false);
-                }
-            } else {
-                misses = misses.saturating_add(1);
-                if misses >= 2 && !*is_offline.peek() {
-                    is_offline.set(true);
-                }
-            }
-            // Re-check sooner while offline so recovery is noticed quickly.
-            let secs = if *is_offline.peek() { 10 } else { 30 };
-            utils::sleep(std::time::Duration::from_secs(secs)).await;
-        }
-    });
-
-    // The connectivity banner mirrors the global `is_offline` state.
-    #[cfg(not(target_arch = "wasm32"))]
-    use_effect(move || {
-        if *is_offline.read() {
-            network_banner.set(Some(true));
-        } else if network_banner.peek().as_ref() == Some(&true) {
-            network_banner.set(Some(false));
-            spawn(async move {
-                utils::sleep(std::time::Duration::from_secs(4)).await;
-                if network_banner.read().as_ref() == Some(&false) {
-                    network_banner.set(None);
-                }
-            });
-        }
-    });
+    let _is_offline = app_lifecycle::use_connectivity_probe(config, network_banner);
 
     let db_for_load = db.clone();
     use_hook(move || {
@@ -1634,6 +1528,7 @@ fn App() -> Element {
 
     let reduce_animations = use_memo(move || config.read().reduce_animations);
     let active_source = use_memo(move || config.read().active_source.clone());
+    let switch_source = hooks::source_switch::use_switch_source();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -1769,7 +1664,7 @@ fn App() -> Element {
                                     onclick: move |_| {
                                         let target = config.peek().server_toggle_target();
                                         if let Some(s) = target {
-                                            config.write().active_source = s;
+                                            switch_source(s);
                                         }
                                         network_banner.set(None);
                                     },
