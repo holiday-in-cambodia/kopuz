@@ -37,6 +37,8 @@ use crate::subsonic::SubsonicClient;
 use crate::ytmusic::YouTubeMusicClient;
 use crate::ytmusic::player::AudioFormat;
 
+pub mod capabilities;
+
 /// Why a [`MediaSource`] operation failed, classified so the UI can react
 /// differently (toast vs re-auth prompt vs "not supported") instead of pattern-
 /// matching an opaque string.
