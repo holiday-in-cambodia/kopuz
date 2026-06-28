@@ -372,12 +372,6 @@ and hit rescan.
 Kopuz can use YouTube Music as a streaming backend. Add it from **Settings →
 Media servers → Add → YouTube Music**.
 
-> [!NOTE]
-> No external helper is needed anymore. Anonymous playback requires a content PO
-> token, which Kopuz now mints **in-app** with a hidden WebView running
-> YouTube's BotGuard. The old `rustypipe-botguard` subprocess is gone, so
-> there's nothing to `cargo install` and it works inside Flatpak.
-
 ### Choosing a mode
 
 The setup dialog offers two methods:
@@ -394,12 +388,6 @@ The setup dialog offers two methods:
   public tracks**. Liked Music, library playlists, and following/liking are
   disabled (those views show a "sign in to enable" prompt). Music Premium-only
   tracks can't be played anonymously.
-
-> [!NOTE]
-> On **Windows**, browser sign-in is currently disabled — the Google accounts
-> page renders blank inside the isolated profile. Windows users get anonymous
-> mode automatically. Sign-in works on Linux and macOS. (Tracked as
-> `TODO(windows-signin)` in `crates/server/src/ytmusic/isolated_profile.rs`.)
 
 ### Premium tracks
 
