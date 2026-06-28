@@ -25,6 +25,7 @@ pub fn PlaylistsPage(
     mut selected_playlist_id: Signal<Option<String>>,
 ) -> Element {
     let source = use_active_source();
+    let nav_ctrl = use_context::<components::NavigationController>();
     let active_source = use_context::<Signal<::server::source::ActiveSource>>();
     let caps = use_memo(move || active_source.read().capabilities());
 
@@ -123,7 +124,7 @@ pub fn PlaylistsPage(
                         PlaylistDetail {
                             playlist_id: pid,
                             config,
-                            on_close: move |_| selected_playlist_id.set(None),
+                            on_close: move |_| nav_ctrl.go_back(),
                             is_downloading_all,
                             on_download_all: move |_| {
                                 let requests: Vec<(String, String, String)> = {
@@ -991,11 +992,9 @@ fn folders_layout(ctx: FoldersCtx<'_>) -> Element {
             if let Some(ref folder) = open_folder {
                 div {
                     div { class: "flex items-center gap-3 mb-8",
-                        button {
-                            class: "flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
-                            onclick: move |_| open_folder_id.set(None),
-                            i { class: "fa-solid fa-arrow-left" }
-                            "{i18n::t(\"back_to_playlists\")}"
+                        components::back_button::BackButton {
+                            class: "",
+                            on_click: move |_| open_folder_id.set(None),
                         }
                         span { class: "text-white/30", "/" }
                         span { class: "text-white font-semibold", "{folder.name}" }

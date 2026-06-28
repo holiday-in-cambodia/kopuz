@@ -101,12 +101,6 @@ top_artists = Популярные исполнители
 new_releases = Новые релизы
 
 # Navigation Buttons
-back_to_albums = Вернуться к альбомам
-back_to_artists = Вернуться к исполнителям
-back_to_playlists = Вернуться к плейлистам
-back_to_browse = Вернуться к просмотру
-back = Назад
-back_to_previous = Вернуться
 up_next = ДАЛЕЕ
 lyrics = ТЕКСТ
 

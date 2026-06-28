@@ -171,12 +171,6 @@ top_artists = Topartiesten
 new_releases = Nieuwe releases
 
 # Navigation Buttons
-back_to_albums = Terug naar albums
-back_to_artists = Terug naar artiesten
-back_to_playlists = Terug naar afspeellijsten
-back_to_browse = Terug naar verkennen
-back = Terug
-back_to_previous = Terug naar
 up_next = HIERNA
 lyrics = SONGTEKST
 

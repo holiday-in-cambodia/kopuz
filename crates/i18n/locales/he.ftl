@@ -100,12 +100,6 @@ top_artists = אמנים מובילים
 new_releases = מהדורות חדשות
 
 # Navigation Buttons
-back_to_albums = חזרה לאלבומים
-back_to_artists = חזרה לאמנים
-back_to_playlists = חזרה לרשימות השמעה
-back_to_browse = חזרה לעיון
-back = חזרה
-back_to_previous = חזרה ל־
 up_next = הבא בתור
 lyrics = מילים
 

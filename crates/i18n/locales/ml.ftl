@@ -171,12 +171,6 @@ top_artists = മികച്ച കലാകാരന്മാർ
 new_releases = പുതിയ റിലീസുകൾ
 
 # Navigation Buttons
-back_to_albums = ആൽബങ്ങളിലേക്ക് മടങ്ങുക
-back_to_artists = കലാകാരന്മാരിലേക്ക് മടങ്ങുക
-back_to_playlists = പ്ലേലിസ്റ്റുകളിലേക്ക് മടങ്ങുക
-back_to_browse = ബ്രൗസിലേക്ക് മടങ്ങുക
-back = മടങ്ങുക
-back_to_previous = മടങ്ങുക
 up_next = അടുത്തത്
 lyrics = വരികൾ
 

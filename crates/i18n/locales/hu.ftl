@@ -100,12 +100,6 @@ top_artists = Legnépszerűbb előadók
 new_releases = Új megjelenések
 
 # Navigation Buttons
-back_to_albums = Vissza az albumokhoz
-back_to_artists = Vissza az előadókhoz
-back_to_playlists = Vissza a lejátszási listákhoz
-back_to_browse = Vissza a böngészéshez
-back = Vissza
-back_to_previous = Vissza ide:
 up_next = KÖVETKEZŐ
 lyrics = DALSZÖVEG
 

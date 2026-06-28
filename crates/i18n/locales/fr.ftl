@@ -96,12 +96,6 @@ top_artists = Top Artists
 new_releases = Nouvelle Sortie
 
 # Navigation Buttons
-back_to_albums = Retour aux albums
-back_to_artists = Retour aux artistes
-back_to_playlists = Retour aux Playlists
-back_to_browse = Retour à la navigation
-back = Retour
-back_to_previous = Retour a
 up_next = A suivre
 lyrics = Paroles
 

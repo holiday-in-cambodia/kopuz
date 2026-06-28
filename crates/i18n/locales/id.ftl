@@ -171,12 +171,6 @@ top_artists = Artis Teratas
 new_releases = Rilis Baru
 
 # Navigation Buttons
-back_to_albums = Kembali ke Album
-back_to_artists = Kembali ke Artis
-back_to_playlists = Kembali ke Daftar Putar
-back_to_browse = Kembali ke jelajahi
-back = Kembali
-back_to_previous = Kembali Ke
 up_next = BERIKUTNYA
 lyrics = LIRIK
 

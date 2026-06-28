@@ -100,12 +100,6 @@ top_artists = أبرز الفنانين
 new_releases = إصدارات جديدة
 
 # Navigation Buttons
-back_to_albums = العودة إلى الألبومات
-back_to_artists = العودة إلى الفنانين
-back_to_playlists = العودة إلى قوائم التشغيل
-back_to_browse = العودة إلى التصفح
-back = رجوع
-back_to_previous = رجوع إلى السابق
 up_next = التالي
 lyrics = الكلمات
 

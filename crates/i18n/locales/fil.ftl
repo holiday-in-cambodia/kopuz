@@ -171,12 +171,6 @@ top_artists = Nangungunang mga Artista
 new_releases = Mga Bagong Release
 
 # Navigation Buttons
-back_to_albums = Bumalik sa mga Album
-back_to_artists = Bumalik sa mga Artista
-back_to_playlists = Bumalik sa mga Playlist
-back_to_browse = Bumalik sa Browse
-back = Bumalik
-back_to_previous = Bumalik Sa
 up_next = SUSUNOD
 lyrics = LYRICS
 

@@ -100,12 +100,6 @@ top_artists = 인기 아티스트
 new_releases = 새 앨범
 
 # Navigation Buttons
-back_to_albums = 앨범으로 돌아가기
-back_to_artists = 아티스트로 돌아가기
-back_to_playlists = 재생목록으로 돌아가기
-back_to_browse = 둘러보기로 돌아가기
-back = 뒤로
-back_to_previous = 이전으로
 up_next = 다음 곡
 lyrics = 가사
 

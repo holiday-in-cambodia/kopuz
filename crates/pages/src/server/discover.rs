@@ -1043,7 +1043,6 @@ pub fn DiscoverPlaylistDetail(
                 name: header_title.clone(),
                 description: String::new(),
                 cover_url,
-                back_label: i18n::t("back").to_string(),
                 tracks: track_list,
                 is_album: false,
                 on_close: move |_| on_back.call(()),
@@ -1059,7 +1058,6 @@ fn BackButton(on_back: EventHandler<()>) -> Element {
             class: "inline-flex items-center gap-2 text-white/70 hover:text-white text-sm cursor-pointer mb-6 group",
             onclick: move |_| on_back.call(()),
             i { class: "fa-solid fa-chevron-left text-xs transition-transform group-hover:-translate-x-0.5" }
-            span { "{i18n::t(\"back\")}" }
         }
     }
 }
@@ -1189,7 +1187,6 @@ pub fn DiscoverArtistPage(
                 class: "inline-flex items-center gap-2 text-white/70 hover:text-white text-sm cursor-pointer mt-6 ml-6 md:ml-10 mb-2 group",
                 onclick: move |_| on_back.call(()),
                 i { class: "fa-solid fa-chevron-left text-xs transition-transform group-hover:-translate-x-0.5" }
-                span { "{i18n::t(\"back\")}" }
             }
 
             if *loading.read() {

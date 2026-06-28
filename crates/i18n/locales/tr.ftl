@@ -100,12 +100,6 @@ top_artists = Popüler Sanatçılar
 new_releases = Yeni Çıkanlar
 
 # Navigation Buttons
-back_to_albums = Albümlere Dön
-back_to_artists = Sanatçılara Dön
-back_to_playlists = Çalma Listelerine Dön
-back_to_browse = Aramaya Dön
-back = Geri
-back_to_previous = Geri
 up_next = SIRADAKI
 lyrics = SÖZLER
 

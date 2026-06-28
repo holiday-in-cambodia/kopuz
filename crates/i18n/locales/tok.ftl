@@ -100,12 +100,6 @@ top_artists = jan pali pona a
 new_releases = kalama sin
 
 # Navigation Buttons
-back_to_albums = o tawa kulupu pi kalama sama
-back_to_artists = o tawa jan pali
-back_to_playlists = o tawa kulupu kalama
-back_to_browse = o tawa lukin
-back = o tawa monsi
-back_to_previous = o tawa
 up_next = POKA
 lyrics = SITELEN
 

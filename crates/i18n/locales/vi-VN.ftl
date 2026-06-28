@@ -171,12 +171,6 @@ top_artists = Nghệ sĩ hàng đầu
 new_releases = Phát hành mới
 
 # Navigation Buttons
-back_to_albums = Quay lại Album
-back_to_artists = Quay lại Nghệ sĩ
-back_to_playlists = Quay lại Danh sách phát
-back_to_browse = Quay lại Duyệt
-back = Quay lại
-back_to_previous = Quay lại
 up_next = TIẾP THEO
 lyrics = LỜI BÀI HÁT
 

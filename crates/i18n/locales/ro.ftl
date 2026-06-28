@@ -100,12 +100,6 @@ top_artists = Artiști de Top
 new_releases = Lansări Noi
 
 # Navigation Buttons
-back_to_albums = Înapoi la Albume
-back_to_artists = Înapoi la Artiști
-back_to_playlists = Înapoi la Liste de Redare
-back_to_browse = Înapoi la Răsfoire
-back = Înapoi
-back_to_previous = Înapoi la
 up_next = URMEAZĂ
 lyrics = VERSURI
 

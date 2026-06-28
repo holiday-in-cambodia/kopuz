@@ -65,7 +65,6 @@ pub fn SearchGenreDetail(
                         class: "mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
                          onclick: move |_| on_back.call(()),
                          i { class: "fa-solid fa-arrow-left" }
-                         "{i18n::t(\"back_to_browse\")}"
                     }
                 }
 

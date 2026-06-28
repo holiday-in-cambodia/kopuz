@@ -157,12 +157,6 @@ top_artists = Artistas mais ouvidos
 new_releases = Lançamentos
 
 # Navigation Buttons
-back_to_albums = Voltar para álbuns
-back_to_artists = Voltar para artistas
-back_to_playlists = Voltar para playlists
-back_to_browse = Voltar para explorar
-back = Voltar
-back_to_previous = Voltar para
 up_next = A SEGUIR
 lyrics = LETRAS
 

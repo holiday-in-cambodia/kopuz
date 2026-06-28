@@ -100,12 +100,6 @@ top_artists = Top-Künstler
 new_releases = Neuerscheinungen
 
 # Navigation Buttons
-back_to_albums = Zurück zu Alben
-back_to_artists = Zurück zu Künstlern
-back_to_playlists = Zurück zu Playlists
-back_to_browse = Zurück zu Entdecken
-back = Zurück
-back_to_previous = Zurück zu
 up_next = ALS NÄCHSTES
 lyrics = SONGTEXT
 

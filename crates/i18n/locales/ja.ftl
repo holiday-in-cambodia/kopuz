@@ -100,12 +100,6 @@ top_artists = 人気アーティスト
 new_releases = 新着
 
 # Navigation Buttons
-back_to_albums = アルバムに戻る
-back_to_artists = アーティストに戻る
-back_to_playlists = プレイリストに戻る
-back_to_browse = ブラウズに戻る
-back = 戻る
-back_to_previous = 戻る
 up_next = 次の曲
 lyrics = 歌詞
 

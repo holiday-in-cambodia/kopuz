@@ -100,12 +100,6 @@ top_artists = Κορυφαίοι Καλλιτέχνες
 new_releases = Νέες Κυκλοφορίες
 
 # Navigation Buttons
-back_to_albums = Επιστροφή στα Άλμπουμ
-back_to_artists = Επιστροφή στους Καλλιτέχνες
-back_to_playlists = Επιστροφή στις Λίστες Αναπαραγωγής
-back_to_browse = Επιστροφή στην Αναζήτηση
-back = Πίσω
-back_to_previous = Πίσω
 up_next = Επόμενο
 lyrics = Στίχοι
 

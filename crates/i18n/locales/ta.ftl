@@ -171,12 +171,6 @@ top_artists = சிறந்த கலைஞர்கள்
 new_releases = புதிய வெளியீடுகள்
 
 # Navigation Buttons
-back_to_albums = ஆல்பங்களுக்குத் திரும்பு
-back_to_artists = கலைஞர்களுக்குத் திரும்பு
-back_to_playlists = பிளேலிஸ்ட்களுக்குத் திரும்பு
-back_to_browse = உலாவலுக்குத் திரும்பு
-back = பின்
-back_to_previous = திரும்பு
 up_next = அடுத்தது
 lyrics = வரிகள்
 

@@ -100,12 +100,6 @@ top_artists = 热门艺术家
 new_releases = 新添加
 
 # Navigation Buttons
-back_to_albums = 返回专辑
-back_to_artists = 返回艺术家
-back_to_playlists = 返回播放列表
-back_to_browse = 返回浏览
-back = 返回
-back_to_previous = 返回
 up_next = 接下来播放
 lyrics = 歌词
 

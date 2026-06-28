@@ -96,12 +96,6 @@ top_artists = 󱤑󱥉󱥔󱤀
 new_releases = 󱤕󱥝
 
 # Navigation Buttons
-back_to_albums = 󱥄󱥩󱤟󱥍󱦗󱤕󱥖󱦘
-back_to_artists = 󱥄󱥩󱤑󱥉
-back_to_playlists = 󱥄󱥩󱤟󱤕
-back_to_browse = 󱥄󱥩󱤮
-back = 󱥄󱥩󱤸
-back_to_previous = 󱥄󱥩
 up_next = 󱥒
 lyrics = 󱥠
 

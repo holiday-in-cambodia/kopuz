@@ -1450,12 +1450,47 @@ fn App() -> Element {
     provide_context(scroll_positions);
     provide_context(components::source_switcher::SettingsAnchor(settings_anchor));
     provide_context(fetched_artist_images);
-    provide_context(components::NavigationController {
+    let mut nav_history = use_signal(Vec::<components::NavSnapshot>::new);
+    let mut nav_restoring = use_signal(|| false);
+    let mut nav_last = use_signal(|| None::<components::NavSnapshot>);
+    use_effect(move || {
+        let snap = components::NavSnapshot {
+            route: *current_route.read(),
+            album_id: selected_album_id.read().clone(),
+            artist_name: selected_artist_name.read().clone(),
+            artist_channel_id: selected_artist_channel_id.read().clone(),
+            playlist_id: selected_playlist_id.read().clone(),
+            discover_playlist_id: discover_selected_playlist_id.read().clone(),
+            discover_playlist_title: discover_selected_playlist_title.read().clone(),
+        };
+        if *nav_restoring.peek() {
+            nav_restoring.set(false);
+            nav_last.set(Some(snap));
+            return;
+        }
+        let prev = nav_last.peek().clone();
+        match prev {
+            Some(prev) if prev != snap => {
+                nav_history.write().push(prev);
+                nav_last.set(Some(snap));
+            }
+            None => nav_last.set(Some(snap)),
+            _ => {}
+        }
+    });
+
+    let nav_ctrl = components::NavigationController {
         current_route,
         selected_artist_name,
         selected_artist_channel_id,
         selected_album_id,
-    });
+        selected_playlist_id,
+        discover_playlist_id: discover_selected_playlist_id,
+        discover_playlist_title: discover_selected_playlist_title,
+        history: nav_history,
+        restoring: nav_restoring,
+    };
+    provide_context(nav_ctrl);
 
     // Sidebar collapse state. On Android the sidebar is an overlay drawer that
     // starts collapsed and is toggled by the mobile header hamburger; the
@@ -1813,17 +1848,7 @@ fn App() -> Element {
                                     if is_details {
                                         button {
                                             class: "w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white active:scale-95 transition-all border border-white/10",
-                                            onclick: move |_| {
-                                                match *current_route.peek() {
-                                                    Route::Album => selected_album_id.set(String::new()),
-                                                    Route::Artist => {
-                                                        selected_artist_name.set(String::new());
-                                                        selected_artist_channel_id.set(None);
-                                                    }
-                                                    Route::Playlists => selected_playlist_id.set(None),
-                                                    _ => {}
-                                                }
-                                            },
+                                            onclick: move |_| nav_ctrl.go_back(),
                                             i { class: "fa-solid fa-arrow-left text-lg" }
                                         }
                                     } else {
@@ -1917,13 +1942,7 @@ fn App() -> Element {
                             pages::server::discover::DiscoverPlaylistDetail {
                                 selected_playlist_id: discover_selected_playlist_id,
                                 selected_playlist_title: discover_selected_playlist_title,
-                                on_back: move |_| {
-                                    // Mirror DiscoverArtist: clear id so
-                                    // re-opening the same playlist refetches.
-                                    discover_selected_playlist_id.set(None);
-                                    discover_selected_playlist_title.set(None);
-                                    current_route.set(Route::Discover);
-                                },
+                                on_back: move |_| nav_ctrl.go_back(),
                             }
                         },
                         Route::Search => rsx! {
@@ -1971,10 +1990,8 @@ fn App() -> Element {
                             }
                         },
                         Route::Artist => {
-                            // YT Music gets the rich YT-backed profile (banner,
-                            // top songs, albums, related) ONLY when an artist
-                            // is actually selected. The Artists sidebar tab /
-                            // back-to-list navigation lands with both signals
+                            // YT Music gets the rich YT-backed profile (banner, top songs, albums, related) ONLY when an artist is actually selected. The Artists sidebar tab / back-to-list navigation
+                            //  lands with both signals
                             // cleared — fall through to the library-driven
                             // grid in that case (populated on YT from followed
                             // artists + liked-song artists by the library
@@ -1993,12 +2010,7 @@ fn App() -> Element {
                                     pages::server::discover::DiscoverArtistPage {
                                         selected_artist_id: selected_artist_channel_id,
                                         selected_artist_name: selected_artist_name,
-                                        on_back: move |_| {
-                                            // Empty selection on Route::Artist renders the grid.
-                                            selected_artist_name.set(String::new());
-                                            selected_artist_channel_id.set(None);
-                                            current_route.set(Route::Artist);
-                                        },
+                                        on_back: move |_| nav_ctrl.go_back(),
                                         on_select_album: move |id: String| {
                                             selected_album_id.set(id);
                                             current_route.set(Route::Album);

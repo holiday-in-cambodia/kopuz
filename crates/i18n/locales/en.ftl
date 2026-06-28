@@ -171,12 +171,6 @@ top_artists = Top Artists
 new_releases = New Releases
 
 # Navigation Buttons
-back_to_albums = Back to Albums
-back_to_artists = Back to Artists
-back_to_playlists = Back to Playlists
-back_to_browse = Back to Browse
-back = Back
-back_to_previous = Back To
 up_next = Up Next
 lyrics = Lyrics
 
