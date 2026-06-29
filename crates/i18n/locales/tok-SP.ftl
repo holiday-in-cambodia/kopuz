@@ -379,6 +379,10 @@ position_bottom = Bottom
 position_top = Top
 
 metadata = Metadata
+clear_cover_cache = o weka e sitelen awen
+cache_cleared = sitelen awen li weka
+force_rescan_photos = o lukin sin e sitelen
+rescanning_photos = sitelen li kama sin…
 artist_photo_source = Artist Photo Source
 artist_photo = Artist Photo
 album_cover = Album Cover
