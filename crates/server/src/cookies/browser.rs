@@ -123,7 +123,7 @@ pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
     if let Some(v) = std::env::var_os(&env_key)
         && !v.is_empty()
     {
-        return Some(v.to_string_lossy().into_owned());  
+        return Some(v.to_string_lossy().into_owned());
     }
 
     if in_flatpak() {
