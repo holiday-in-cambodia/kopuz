@@ -153,8 +153,7 @@ pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
     }
 
     for cand in browser_flatpak_ids(browser) {     
-        let ok = check_browser_command(format!("flatpak info {cand}")).await;
-        if ok {
+        if check_browser_command(format!("flatpak info {cand}")).await {
             return Some(format!("flatpak run {cand}"));
         }
     }
