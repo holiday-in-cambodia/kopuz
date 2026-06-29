@@ -1443,13 +1443,12 @@ fn App() -> Element {
                             continue;
                         };
                         // Embedded art first, then a folder image beside the track.
-                        if let Some((data, _mime)) = reader::read_cover(path) {
-                            if let Ok(saved) =
+                        if let Some((data, _mime)) = reader::read_cover(path)
+                            && let Ok(saved) =
                                 reader::utils::save_cover(&album.id, &data, None, &cover_cache_dir)
-                            {
-                                new_cover = Some(saved);
-                                break;
-                            }
+                        {
+                            new_cover = Some(saved);
+                            break;
                         }
                         if let Some(folder) =
                             path.parent().and_then(reader::utils::find_folder_cover)
