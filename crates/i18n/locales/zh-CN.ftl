@@ -45,6 +45,7 @@ player_settings = 播放器设置
 discord_presence = Discord 状态
 connectivity = 连接
 discord_presence_paused = 显示暂停时的 Discord 状态
+discord_presence_source = 在 Discord 状态中显示媒体来源
 reduce_animations = 减少动画
 show_source_toggle = 显示来源切换
 titlebar_mode = 标题栏

@@ -45,6 +45,7 @@ player_settings = 플레이어 설정
 discord_presence = Discord 상태 표시
 connectivity = 연결
 discord_presence_paused = 일시정지한 Discord 상태 표시
+discord_presence_source = Discord 상태에 미디어 소스 표시
 reduce_animations = 애니메이션 줄이기
 show_source_toggle = 소스 전환 표시
 titlebar_mode = 제목 표시줄

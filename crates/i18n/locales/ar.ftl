@@ -45,6 +45,7 @@ player_settings = إعدادات المشغل
 discord_presence = شارة Discord
 connectivity = الاتصال
 discord_presence_paused = إظهار حالة Discord عند الإيقاف المؤقت
+discord_presence_source = إظهار مصدر الوسائط في حالة Discord
 reduce_animations = تقليل الرسوم المتحركة
 show_source_toggle = إظهار إختيار تبديل المصدر
 titlebar_mode = شريط العنوان

@@ -45,6 +45,7 @@ player_settings = הגדרות נגן
 discord_presence = נוכחות דיסקורד
 connectivity = קישוריות
 discord_presence_paused = הצגת סטטוס Discord במצב מושהה
+discord_presence_source = הצגת מקור המדיה בסטטוס Discord
 reduce_animations = הפחתת אנימציות
 show_source_toggle = הצגת מקור
 titlebar_mode = סרגל כותרת

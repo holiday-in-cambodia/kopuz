@@ -59,6 +59,7 @@ pub struct LibraryConfig {
 pub struct IntegrationConfig {
     pub discord_presence: Option<bool>,
     pub discord_presence_paused: Option<bool>,
+    pub discord_presence_source: Option<bool>,
     pub musicbrainz_token: String,
     pub lastfm_api_key: String,
     pub lastfm_api_secret: String,
@@ -132,6 +133,7 @@ impl AppConfig {
         IntegrationConfig {
             discord_presence: self.discord_presence,
             discord_presence_paused: self.discord_presence_paused,
+            discord_presence_source: self.discord_presence_source,
             musicbrainz_token: self.musicbrainz_token.clone(),
             lastfm_api_key: self.lastfm_api_key.clone(),
             lastfm_api_secret: self.lastfm_api_secret.clone(),

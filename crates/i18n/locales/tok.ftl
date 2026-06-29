@@ -45,6 +45,7 @@ player_settings = nasin pi ilo lawa kalama
 discord_presence = lon pi ilo Siko
 connectivity = tawa lon ma
 discord_presence_paused = o lukin e lon pi ilo Siko lon tenpo awen
+discord_presence_source = o lukin e ilo pi kalama lon lon pi ilo Siko
 reduce_animations = o lili e tawa
 show_source_toggle = o lukin e ilo ante
 titlebar_mode = lawa ilo

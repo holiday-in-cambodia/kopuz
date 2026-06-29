@@ -45,6 +45,7 @@ player_settings = 󱤿󱥍󱤎󱤤󱤕
 discord_presence = 󱤬󱥍󱤎󱦐󱥛󱦜󱤜󱦝󱦑
 connectivity = 󱥩󱤬󱥭
 discord_presence_paused = 󱥄󱤮󱤉 󱤬󱥍󱤎󱦐󱥛 󱥫
+discord_presence_source = 󱥄󱤮󱤉 󱤎 󱤬 󱤬󱥍󱤎󱦐󱥛󱦜󱤜󱦝󱦑
 reduce_animations = 󱥄󱤨󱤉󱥩
 show_source_toggle = 󱥄󱤮󱤉󱤎󱤆
 titlebar_mode = 󱤤󱤎

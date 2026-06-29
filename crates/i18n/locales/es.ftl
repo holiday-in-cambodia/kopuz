@@ -45,6 +45,7 @@ player_settings = Configuración del reproductor
 discord_presence = Presencia de Discord
 connectivity = Conectividad
 discord_presence_paused = Mostrar estado de Discord en pausa
+discord_presence_source = Mostrar la fuente multimedia en el estado de Discord
 reduce_animations = Reducir animaciones
 show_source_toggle = Mostrar interruptor de fuente
 titlebar_mode = Barra de título

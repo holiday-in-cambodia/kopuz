@@ -45,6 +45,7 @@ player_settings = Oynatıcı Ayarları
 discord_presence = Discord Durumu
 connectivity = Bağlantı
 discord_presence_paused = Discord durumu duraklatıldığında göster
+discord_presence_source = Medya kaynağını Discord durumunda göster
 reduce_animations = Animasyonları Azalt
 show_source_toggle = Sidebar'da Kaynağı Göster
 titlebar_mode = Başlık çubuğu

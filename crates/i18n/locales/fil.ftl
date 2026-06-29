@@ -54,6 +54,7 @@ channel_mode_swap_left_right = Ipagpalit ang L/R
 discord_presence = Discord Presence
 connectivity = Koneksyon
 discord_presence_paused = Ipakita ang Naka-pause na Discord status
+discord_presence_source = Ipakita ang media source sa Discord status
 reduce_animations = Bawasan ang mga Animation
 auto_check_updates = Awtomatikong Pag-check ng mga Update
 minimize_to_tray = I-minimize sa system tray

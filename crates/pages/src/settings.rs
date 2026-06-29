@@ -531,6 +531,15 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                                                 }
                                             }
                                         }
+                                        SettingItem {
+                                            title: i18n::t("discord_presence_source").to_string(),
+                                            control: rsx! {
+                                                ToggleSetting {
+                                                    enabled: config.read().discord_presence_source.unwrap_or(true),
+                                                    on_change: move |val| config.write().discord_presence_source = Some(val),
+                                                }
+                                            }
+                                        }
                                     }
                                     SettingItem {
                                         title: i18n::t("listenbrainz").to_string(),

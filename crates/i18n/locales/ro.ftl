@@ -45,6 +45,7 @@ player_settings = Setări Player
 discord_presence = Prezență Discord
 connectivity = Conectivitate
 discord_presence_paused = Afișează statusul Discord în pauză
+discord_presence_source = Afișează sursa media în statusul Discord
 reduce_animations = Reducere Animații
 show_source_toggle = Comutator Sursă
 titlebar_mode = Bară de titlu
