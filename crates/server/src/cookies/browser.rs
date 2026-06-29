@@ -145,7 +145,7 @@ pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
         }
     }    
 
-    if let Ok(v) = std::env::var("KOPUZ_BROWSER_FLATPAK_ID") {   
+    if let Ok(v) = std::env::var("KOPUZ_BROWSER_FLATPAK_ID") && !v.trim().is_empty() {   
         let id = v.to_string().to_owned(); 
         if check_browser_command(format!("flatpak info {id}")).await {
             return Some(format!("flatpak run {id}"));

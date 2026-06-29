@@ -45,7 +45,7 @@ where
     prepare_profile(browser, &profile);
     
 
-    let bin = if let Ok(v) = std::env::var("KOPUZ_BROWSER_COMMAND") {
+    let bin = if let Ok(v) = std::env::var("KOPUZ_BROWSER_COMMAND") && !v.trim().is_empty() {
             tracing::info!("$KOPUZ_BROWSER_COMMAND used to override browser command");
             v.to_string().to_owned()
     } else {
