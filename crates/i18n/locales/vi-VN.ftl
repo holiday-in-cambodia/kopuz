@@ -54,6 +54,7 @@ channel_mode_swap_left_right = Đổi trái/phải
 discord_presence = Trạng thái Discord
 connectivity = Kết nối
 discord_presence_paused = Hiển thị trạng thái Discord khi tạm dừng
+discord_presence_source = Hiển thị nguồn phát trong trạng thái Discord
 reduce_animations = Giảm hiệu ứng động
 auto_check_updates = Tự động kiểm tra cập nhật
 minimize_to_tray = Thu nhỏ vào khay hệ thống

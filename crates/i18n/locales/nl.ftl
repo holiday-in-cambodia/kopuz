@@ -54,6 +54,7 @@ channel_mode_swap_left_right = L/R omwisselen
 discord_presence = Discord-status
 connectivity = Connectiviteit
 discord_presence_paused = Gepauzeerde Discord-status tonen
+discord_presence_source = Mediabron tonen in Discord-status
 reduce_animations = Animaties verminderen
 auto_check_updates = Automatisch op updates controleren
 minimize_to_tray = Naar systeemvak minimaliseren

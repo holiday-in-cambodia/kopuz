@@ -498,6 +498,8 @@ pub struct AppConfig {
     pub discord_presence: Option<bool>,
     #[serde(default = "default_discord_presence_paused")]
     pub discord_presence_paused: Option<bool>,
+    #[serde(default = "default_discord_presence_source")]
+    pub discord_presence_source: Option<bool>,
     #[serde(default = "default_sort_order")]
     pub sort_order: SortOrder,
     #[serde(default = "default_artist_view_order")]
@@ -603,6 +605,10 @@ fn default_discord_presence_paused() -> Option<bool> {
     Some(true)
 }
 
+fn default_discord_presence_source() -> Option<bool> {
+    Some(true)
+}
+
 fn default_sort_order() -> SortOrder {
     SortOrder::Title
 }
@@ -681,6 +687,7 @@ impl Default for AppConfig {
             device_id: default_device_id(),
             discord_presence: Some(true),
             discord_presence_paused: Some(true),
+            discord_presence_source: Some(true),
             sort_order: default_sort_order(),
             artist_view_order: default_artist_view_order(),
             listen_counts: HashMap::new(),

@@ -45,6 +45,7 @@ player_settings = プレイヤー設定
 discord_presence = Discordプレゼンス
 connectivity = 接続
 discord_presence_paused = 一時停止中のDiscordステータスを表示
+discord_presence_source = Discordステータスにメディアソースを表示
 reduce_animations = アニメーションを減らす
 show_source_toggle = ソース切替を表示
 titlebar_mode = タイトルバー

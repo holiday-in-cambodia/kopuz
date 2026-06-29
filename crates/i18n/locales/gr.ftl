@@ -45,6 +45,7 @@ player_settings = Ρυθμίσεις Αναπαραγωγής
 discord_presence = Κατάσταση Discord
 connectivity = Συνδεσιμότητα
 discord_presence_paused = Εμφάνιση κατάστασης Discord σε παύση
+discord_presence_source = Εμφάνιση πηγής πολυμέσων στην κατάσταση Discord
 reduce_animations = Μείωση κινήσεων
 show_source_toggle = Εμφάνιση διακόπτη πηγής
 titlebar_mode = Γραμμή τίτλου

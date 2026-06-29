@@ -54,6 +54,7 @@ channel_mode_swap_left_right = Tukar L/R
 discord_presence = Discord Presence
 connectivity = Konektivitas
 discord_presence_paused = Tampilkan status Discord saat dijeda
+discord_presence_source = Tampilkan sumber media di status Discord
 reduce_animations = Kurangi Animasi
 auto_check_updates = Otomatis Memeriksa Pembaruan
 minimize_to_tray = Minimalkan ke baki sistem

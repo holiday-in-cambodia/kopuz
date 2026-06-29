@@ -45,6 +45,7 @@ player_settings = Lejátszó beállításai
 discord_presence = Discord jelenlét
 connectivity = Kapcsolódás
 discord_presence_paused = Szüneteltetett Discord állapot megjelenítése
+discord_presence_source = Médiaforrás megjelenítése a Discord állapotban
 reduce_animations = Animációk csökkentése
 show_source_toggle = Forrás kapcsoló megjelenítése
 titlebar_mode = Címsor

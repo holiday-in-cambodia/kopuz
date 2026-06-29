@@ -54,6 +54,7 @@ channel_mode_swap_left_right = Swap L/R
 discord_presence = Discord Presence
 connectivity = Connectivity
 discord_presence_paused = Show paused Discord status
+discord_presence_source = Show media source in Discord status
 reduce_animations = Reduce Animations
 auto_check_updates = Auto Check Updates
 minimize_to_tray = Minimize to system tray
