@@ -29,6 +29,8 @@ mod app_lifecycle;
 mod artwork_protocol;
 #[cfg(all(not(target_arch = "wasm32"), not(target_os = "android")))]
 mod chrome_trace;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod desktop_integration;
 mod desktop_shell;
 mod legacy;
 mod logging;
@@ -95,6 +97,9 @@ static PRESENCE: std::sync::OnceLock<Option<Arc<Presence>>> = std::sync::OnceLoc
 fn main() {
     #[cfg(all(not(target_arch = "wasm32"), not(target_os = "android")))]
     {
+        #[cfg(all(not(debug_assertions), any(target_os = "linux", target_os = "macos")))]
+        desktop_integration::sync();
+
         let log_dir = directories::ProjectDirs::from("com", "temidaradev", "kopuz")
             .map(|dirs| dirs.cache_dir().join("logs"))
             .unwrap_or_else(|| std::path::PathBuf::from("logs"));
