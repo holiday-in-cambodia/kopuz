@@ -23,9 +23,7 @@ pub(crate) fn browser_flatpak_ids(browser: Browser) -> &'static [&'static str] {
         Browser::Brave => &["com.brave.Browser"],
         Browser::Chrome => &["com.google.Chrome", "com.google.ChromeDev"],
         Browser::Chromium => &["org.chromium.Chromium"],
-        Browser::Edge => &[
-            "com.microsoft.Edge",
-        ],
+        Browser::Edge => &["com.microsoft.Edge"],
         Browser::Vivaldi => &["com.vivaldi.Vivaldi"],
     }
 }
@@ -89,7 +87,6 @@ pub(crate) fn in_flatpak() -> bool {
     std::path::Path::new("/.flatpak-info").exists()
 }
 
-
 /// True if the command does not error, uses `sh -c` for executing in shell
 /// If running in flatpak container uses `flatpak-spawn --host`.
 pub(crate) async fn check_browser_command(arg: String) -> bool {
@@ -103,15 +100,15 @@ pub(crate) async fn check_browser_command(arg: String) -> bool {
         c
     };
 
-    command.arg(arg);    
+    command.arg(arg);
 
-    let ok = command          
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .await
-            .map(|s| s.success())
-            .unwrap_or(false);
+    let ok = command
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .await
+        .map(|s| s.success())
+        .unwrap_or(false);
     ok
 }
 
@@ -127,7 +124,7 @@ pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
     }
 
     if in_flatpak() {
-        for cand in browser_candidates(browser) {        
+        for cand in browser_candidates(browser) {
             if check_browser_command(format!("command -v {cand}")).await {
                 return Some(cand.to_string());
             }
@@ -143,21 +140,23 @@ pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
                 }
             }
         }
-    }    
-
-    if let Ok(v) = std::env::var("KOPUZ_BROWSER_FLATPAK_ID") && !v.trim().is_empty() {   
-        let id = v.to_string().to_owned(); 
-        if check_browser_command(format!("flatpak info {id}")).await {
-            return Some(format!("flatpak run {id}"));
-        }        
     }
 
-    for cand in browser_flatpak_ids(browser) {     
+    if let Ok(v) = std::env::var("KOPUZ_BROWSER_FLATPAK_ID")
+        && !v.trim().is_empty()
+    {
+        let id = v.to_string().to_owned();
+        if check_browser_command(format!("flatpak info {id}")).await {
+            return Some(format!("flatpak run {id}"));
+        }
+    }
+
+    for cand in browser_flatpak_ids(browser) {
         if check_browser_command(format!("flatpak info {cand}")).await {
             return Some(format!("flatpak run {cand}"));
         }
     }
-        
+
     #[cfg(target_os = "macos")]
     for path in macos_app_paths(browser) {
         if std::path::Path::new(path).is_file() {
@@ -182,7 +181,7 @@ pub(crate) fn browser_command(bin: &str) -> Command {
         c.args(["--host", "--watch-bus"]);
         c.args(cmd);
         c
-    } else {      
+    } else {
         let mut c = Command::new(&cmd[0]);
         c.args(&cmd[1..]);
         c

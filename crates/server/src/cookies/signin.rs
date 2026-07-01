@@ -5,9 +5,7 @@ use std::time::{Duration, Instant};
 use config::Browser;
 use tokio::process::Child;
 
-use super::browser::{
-    browser_candidates, browser_command, find_browser_bin, in_flatpak,
-};
+use super::browser::{browser_candidates, browser_command, find_browser_bin, in_flatpak};
 use super::profile::profile_dir;
 
 /// Wipe the `<prefix>-<server_id>` profile, launch `browser` at `signin_url`,
@@ -43,26 +41,27 @@ where
     }
 
     prepare_profile(browser, &profile);
-    
 
-    let bin = if let Ok(v) = std::env::var("KOPUZ_BROWSER_COMMAND") && !v.trim().is_empty() {
-            tracing::info!("$KOPUZ_BROWSER_COMMAND used to override browser command");
-            v.to_string().to_owned()
+    let bin = if let Ok(v) = std::env::var("KOPUZ_BROWSER_COMMAND")
+        && !v.trim().is_empty()
+    {
+        tracing::info!("$KOPUZ_BROWSER_COMMAND used to override browser command");
+        v.to_string().to_owned()
     } else {
         let error = if in_flatpak() {
-                format!(
-                    "{browser} not found on the host (looked for: {}). Install it on the host system, or set $KOPUZ_{}_BIN.",
-                    browser_candidates(browser).join(", "),
-                    browser.id().to_uppercase().replace('-', "_")
-                )
-            } else {
-                format!(
-                    "{browser} not found in PATH (looked for: {}). Install it, or set $KOPUZ_{}_BIN.",
-                    browser_candidates(browser).join(", "),
-                    browser.id().to_uppercase().replace('-', "_")
-                )
-            };
-        find_browser_bin(browser).await.ok_or_else(|| {error})?
+            format!(
+                "{browser} not found on the host (looked for: {}). Install it on the host system, or set $KOPUZ_{}_BIN.",
+                browser_candidates(browser).join(", "),
+                browser.id().to_uppercase().replace('-', "_")
+            )
+        } else {
+            format!(
+                "{browser} not found in PATH (looked for: {}). Install it, or set $KOPUZ_{}_BIN.",
+                browser_candidates(browser).join(", "),
+                browser.id().to_uppercase().replace('-', "_")
+            )
+        };
+        find_browser_bin(browser).await.ok_or_else(|| error)?
     };
     tracing::info!(%bin, profile = %profile.display(), "launching sign-in browser");
     let mut cmd = browser_command(&bin);
