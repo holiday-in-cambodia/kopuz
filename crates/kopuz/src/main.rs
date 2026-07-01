@@ -1406,11 +1406,6 @@ fn App() -> Element {
     // any album whose cached cover file is missing. No online fetch — this is
     // the "force rescan photos" action and is independent of auto_fetch_covers.
     let db_for_reextract = db.clone();
-    use_effect(move || {
-        if !*initial_load_done.read() || !*config_loaded_ok.read() {
-            return;
-        }
-    let db_for_reextract = db.clone();
     #[cfg(not(target_arch = "wasm32"))]
     let mut cover_reextract_in_flight = use_signal(|| false);
     use_effect(move || {
