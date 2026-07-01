@@ -378,6 +378,10 @@ position_bottom = Jos
 position_top = Sus
 
 metadata = Metadate
+clear_cover_cache = Golește cache-ul coperților
+cache_cleared = Cache golit
+force_rescan_photos = Forțează rescanarea fotografiilor
+rescanning_photos = Se reextrag coperțile…
 artist_photo_source = Sursă fotografie artist
 artist_photo = Fotografie artist
 album_cover = Copertă album

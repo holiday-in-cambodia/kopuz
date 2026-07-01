@@ -379,6 +379,10 @@ position_bottom = Abajo
 position_top = Arriba
 
 metadata = Metadatos
+clear_cover_cache = Borrar caché de carátulas
+cache_cleared = Caché borrada
+force_rescan_photos = Forzar reescaneo de fotos
+rescanning_photos = Volviendo a extraer carátulas…
 artist_photo_source = Fuente de foto del artista
 artist_photo = Foto del artista
 album_cover = Portada del álbum

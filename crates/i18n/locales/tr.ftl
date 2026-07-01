@@ -378,6 +378,10 @@ position_bottom = Alt
 position_top = Üst
 
 metadata = Meta veri
+clear_cover_cache = Kapak önbelleğini temizle
+cache_cleared = Önbellek temizlendi
+force_rescan_photos = Fotoğrafları yeniden taramaya zorla
+rescanning_photos = Kapaklar yeniden çıkarılıyor…
 artist_photo_source = Sanatçı fotoğraf kaynağı
 artist_photo = Sanatçı fotoğrafı
 album_cover = Albüm kapağı

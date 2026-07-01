@@ -378,6 +378,10 @@ position_bottom = 底部
 position_top = 顶部
 
 metadata = 元数据
+clear_cover_cache = 清除封面缓存
+cache_cleared = 缓存已清除
+force_rescan_photos = 强制重新扫描照片
+rescanning_photos = 正在重新提取封面…
 artist_photo_source = 艺术家照片来源
 artist_photo = 艺术家照片
 album_cover = 专辑封面

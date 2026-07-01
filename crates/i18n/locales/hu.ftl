@@ -378,6 +378,10 @@ position_bottom = Lent
 position_top = Fent
 
 metadata = Metaadatok
+clear_cover_cache = Borítók gyorsítótárának törlése
+cache_cleared = Gyorsítótár törölve
+force_rescan_photos = Fényképek újraellenőrzésének kényszerítése
+rescanning_photos = Borítók újrakinyerése…
 artist_photo_source = Előadó fotójának forrása
 artist_photo = Előadó fotója
 album_cover = Albumborító

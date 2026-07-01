@@ -377,6 +377,10 @@ position_bottom = Inferior
 position_top = Superior
 
 metadata = Metadados
+clear_cover_cache = Limpar cache de capas
+cache_cleared = Cache limpo
+force_rescan_photos = Forçar reanálise de fotos
+rescanning_photos = Reextraindo capas…
 artist_photo_source = Fonte da foto do artista
 artist_photo = Foto do artista
 album_cover = Capa do álbum

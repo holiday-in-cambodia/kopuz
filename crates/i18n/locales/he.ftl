@@ -378,6 +378,10 @@ position_bottom = למטה
 position_top = למעלה
 
 metadata = מטא-נתונים
+clear_cover_cache = נקה מטמון עטיפות
+cache_cleared = המטמון נוקה
+force_rescan_photos = אלץ סריקה מחדש של תמונות
+rescanning_photos = מחלץ עטיפות מחדש…
 artist_photo_source = מקור תמונת אמן
 artist_photo = תמונת אמן
 album_cover = עטיפת אלבום
