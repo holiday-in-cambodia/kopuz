@@ -378,6 +378,10 @@ position_bottom = Знизу
 position_top = Зверху
 
 metadata = Метадані
+clear_cover_cache = Очистити кеш обкладинок
+cache_cleared = Кеш очищено
+force_rescan_photos = Примусово пересканувати фото
+rescanning_photos = Повторне видобування обкладинок…
 artist_photo_source = Джерело фото виконавця
 artist_photo = Фото виконавця
 album_cover = Обкладинка альбому

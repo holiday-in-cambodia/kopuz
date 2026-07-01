@@ -378,6 +378,10 @@ position_bottom = anpa
 position_top = sewi
 
 metadata = ijo nanpa
+clear_cover_cache = o weka e sitelen awen
+cache_cleared = sitelen awen li weka
+force_rescan_photos = o lukin sin e sitelen
+rescanning_photos = sitelen li kama sin…
 artist_photo_source = nasin sitelen jan pali
 artist_photo = sitelen jan pali
 album_cover = sitelen kulupu pi kalama sama

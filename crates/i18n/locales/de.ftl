@@ -378,6 +378,10 @@ position_bottom = Unten
 position_top = Oben
 
 metadata = Metadaten
+clear_cover_cache = Cover-Cache leeren
+cache_cleared = Cache geleert
+force_rescan_photos = Fotos neu scannen erzwingen
+rescanning_photos = Cover werden neu extrahiert…
 artist_photo_source = Künstlerfoto-Quelle
 artist_photo = Künstlerfoto
 album_cover = Albumcover

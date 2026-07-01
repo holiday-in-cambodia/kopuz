@@ -378,6 +378,10 @@ position_bottom = Κάτω
 position_top = Πάνω
 
 metadata = Μεταδεδομένα
+clear_cover_cache = Εκκαθάριση προσωρινής μνήμης εξωφύλλων
+cache_cleared = Η προσωρινή μνήμη εκκαθαρίστηκε
+force_rescan_photos = Εξαναγκασμός επανασάρωσης φωτογραφιών
+rescanning_photos = Επανεξαγωγή εξωφύλλων…
 artist_photo_source = Πηγή φωτογραφίας καλλιτέχνη
 artist_photo = Φωτογραφία καλλιτέχνη
 album_cover = Εξώφυλλο άλμπουμ

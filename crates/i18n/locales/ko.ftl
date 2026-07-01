@@ -378,6 +378,10 @@ position_bottom = 아래
 position_top = 위
 
 metadata = 메타데이터
+clear_cover_cache = 커버 캐시 지우기
+cache_cleared = 캐시 지움
+force_rescan_photos = 사진 강제 재검색
+rescanning_photos = 커버 다시 추출 중…
 artist_photo_source = 아티스트 사진 출처
 artist_photo = 아티스트 사진
 album_cover = 앨범 커버

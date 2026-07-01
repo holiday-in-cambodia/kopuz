@@ -461,6 +461,8 @@ fn App() -> Element {
         use_hook(|| Signal::new_in_scope(::server::DownloadProgress::default(), ScopeId::ROOT));
     pages::server::download_manager::register_progress_signal(download_progress);
     let mut trigger_rescan = use_signal(|| 0);
+    let trigger_cover_reextract = use_signal(|| 0);
+    use_context_provider(|| hooks::CoverReextractTrigger(trigger_cover_reextract));
     // Applies detached yt-dlp completions (history + rescan) in this scope —
     // the job drivers outlive the downloads page and can't write these.
     pages::ytdlp_jobs::use_ytdlp_completion_sink(config, trigger_rescan);
@@ -1353,7 +1355,10 @@ fn App() -> Element {
                         let missing_before: std::collections::HashSet<String> = lib
                             .albums
                             .iter()
-                            .filter(|a| a.cover_path.is_none() && !a.manual_cover)
+                            .filter(|a| {
+                                a.cover_path.as_ref().is_none_or(|p| !p.exists())
+                                    && !a.manual_cover
+                            })
                             .map(|a| a.id.clone())
                             .collect();
                         let report = fetcher.fetch_missing_covers(&mut lib).await;
@@ -1395,6 +1400,89 @@ fn App() -> Element {
                 gens.bump(hooks::db_reactivity::Table::Albums);
             }
         }.instrument(tracing::info_span!("library.rescan")));
+    });
+
+    // Force re-extraction of local covers (embedded art, then folder art) for
+    // any album whose cached cover file is missing. No online fetch — this is
+    // the "force rescan photos" action and is independent of auto_fetch_covers.
+    let db_for_reextract = db.clone();
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut cover_reextract_in_flight = use_signal(|| false);
+    use_effect(move || {
+        if !*initial_load_done.read() || !*config_loaded_ok.read() {
+            return;
+        }
+        if *trigger_cover_reextract.read() == 0 {
+            return;
+        }
+        let db = db_for_reextract.clone();
+        let gens = gens_for_albums;
+        #[cfg(not(target_arch = "wasm32"))]
+        if *cover_reextract_in_flight.peek() {
+            return;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        cover_reextract_in_flight.set(true);
+        #[cfg(not(target_arch = "wasm32"))]
+        let cover_cache_dir = cover_cache();
+        #[cfg(not(target_arch = "wasm32"))]
+        spawn(
+            async move {
+                let albums = match db.albums(&db::Source::Local).await {
+                    Ok(a) => a,
+                    Err(e) => {
+                        tracing::error!(error = %e, "cover re-extract: album query failed");
+                        return;
+                    }
+                };
+                let mut changed = 0u32;
+                for album in &albums {
+                    // Manual covers are user-set; a present file needs nothing.
+                    if album.manual_cover || album.cover_path.as_ref().is_some_and(|p| p.exists()) {
+                        continue;
+                    }
+                    let tracks = match db.album_tracks(&db::Source::Local, &album.id).await {
+                        Ok(t) => t,
+                        Err(_) => continue,
+                    };
+                    let mut new_cover: Option<std::path::PathBuf> = None;
+                    for track in &tracks {
+                        let Some(path) = track.id.local_path() else {
+                            continue;
+                        };
+                        // Embedded art first, then a folder image beside the track.
+                        if let Some((data, _mime)) = reader::read_cover(path)
+                            && let Ok(saved) =
+                                reader::utils::save_cover(&album.id, &data, None, &cover_cache_dir)
+                        {
+                            new_cover = Some(saved);
+                            break;
+                        }
+                        if let Some(folder) =
+                            path.parent().and_then(reader::utils::find_folder_cover)
+                        {
+                            new_cover = Some(folder);
+                            break;
+                        }
+                    }
+                    if let Some(cover) = new_cover {
+                        let p = cover.to_string_lossy().into_owned();
+                        if db
+                            .update_album_cover(&db::Source::Local, &album.id, Some(&p), false)
+                            .await
+                            .is_ok()
+                        {
+                            changed += 1;
+                        }
+                    }
+                }
+                if changed > 0 {
+                    gens.bump(hooks::db_reactivity::Table::Albums);
+                }
+                tracing::info!(updated = changed, "cover re-extract: complete");
+            }
+            .instrument(tracing::info_span!("library.cover_reextract")),
+        );
     });
 
     use_effect(move || {

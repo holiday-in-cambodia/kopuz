@@ -384,6 +384,10 @@ position_bottom = أسفل
 position_top = أعلى
 
 metadata = بيانات وصفية
+clear_cover_cache = مسح ذاكرة الأغلفة المؤقتة
+cache_cleared = تم مسح الذاكرة المؤقتة
+force_rescan_photos = إعادة فحص الصور إجبارياً
+rescanning_photos = إعادة استخراج الأغلفة…
 artist_photo_source = مصدر صورة الفنان
 artist_photo = صورة الفنان
 album_cover = غلاف الألبوم

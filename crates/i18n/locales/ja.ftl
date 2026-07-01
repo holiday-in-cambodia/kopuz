@@ -384,6 +384,10 @@ position_bottom = 下
 position_top = 上
 
 metadata = メタデータ
+clear_cover_cache = カバーキャッシュをクリア
+cache_cleared = キャッシュをクリアしました
+force_rescan_photos = 写真の再スキャンを強制
+rescanning_photos = カバーを再抽出中…
 artist_photo_source = アーティスト写真のソース
 artist_photo = アーティスト写真
 album_cover = アルバムカバー

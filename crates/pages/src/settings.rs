@@ -104,6 +104,69 @@ fn logs_section(mut config: Signal<AppConfig>) -> Element {
 fn logs_section(_config: Signal<AppConfig>) -> Element {
     rsx! {}
 }
+
+async fn clear_cover_cache() {
+    let cover_cache = directories::ProjectDirs::from("com", "temidaradev", "kopuz")
+        .map(|d| d.cache_dir().join("covers"))
+        .unwrap_or_else(|| std::path::PathBuf::from("./cache/covers"));
+
+    if let Ok(mut entries) = tokio::fs::read_dir(&cover_cache).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let _ = tokio::fs::remove_file(entry.path()).await;
+        }
+    }
+
+    let tmp = std::env::temp_dir();
+    if let Ok(mut entries) = tokio::fs::read_dir(&tmp).await {
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if let Some(name) = entry.file_name().to_str()
+                && (name.starts_with("rusic_thumb_") || name.starts_with("rusic_hq_"))
+            {
+                let _ = tokio::fs::remove_file(entry.path()).await;
+            }
+        }
+    }
+}
+
+#[component]
+fn ClearCacheButton() -> Element {
+    let mut cleared = use_signal(|| false);
+    let mut reextracting = use_signal(|| false);
+    let mut trigger_reextract = use_context::<hooks::CoverReextractTrigger>().0;
+    rsx! {
+        div { class: "flex flex-wrap gap-3 mt-4 items-center",
+            button {
+                class: "px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm transition-colors flex items-center gap-2",
+                onclick: move |_| {
+                    reextracting.set(false);
+                    spawn(async move {
+                        clear_cover_cache().await;
+                        cleared.set(true);
+                    });
+                },
+                i { class: "fa-solid fa-trash" }
+                "{i18n::t(\"clear_cover_cache\")}"
+            }
+            button {
+                class: "px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm transition-colors flex items-center gap-2",
+                onclick: move |_| {
+                    cleared.set(false);
+                    *trigger_reextract.write() += 1;
+                    reextracting.set(true);
+                },
+                i { class: "fa-solid fa-arrows-rotate" }
+                "{i18n::t(\"force_rescan_photos\")}"
+            }
+            if cleared() {
+                span { class: "text-xs text-emerald-400/80", "{i18n::t(\"cache_cleared\")}" }
+            }
+            if reextracting() {
+                span { class: "text-xs text-emerald-400/80", "{i18n::t(\"rescanning_photos\")}" }
+            }
+        }
+    }
+}
+
 use components::settings_items::{
     BackBehaviorSelector, ChannelModeSelector, DiscordPresencePausedSettings,
     DiscordPresenceSettings, EqualizerPanel, LanguageSelector, LastFmSettings, LibreFmSettings,
@@ -725,6 +788,7 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                             }
                         }
                     }
+                    ClearCacheButton {}
                 }
 
                 section {
