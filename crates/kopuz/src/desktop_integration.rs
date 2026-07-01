@@ -31,8 +31,10 @@ fn stamp_path() -> Option<PathBuf> {
     app_data_dir().map(|dir| dir.join("desktop-integration.stamp"))
 }
 
+const STAMP_SCHEMA: u32 = 2;
+
 fn stamp_contents(exe: &std::path::Path) -> String {
-    format!("{APP_VERSION}\n{}", exe.display())
+    format!("{STAMP_SCHEMA}\n{APP_VERSION}\n{}", exe.display())
 }
 
 pub fn sync() {
@@ -159,13 +161,15 @@ mod platform {
         let _ = std::process::Command::new("update-desktop-database")
             .arg(applications_dir())
             .status();
+        for kbuild in ["kbuildsycoca6", "kbuildsycoca5"] {
+            let _ = std::process::Command::new(kbuild).status();
+        }
     }
 }
 
 #[cfg(target_os = "macos")]
 mod platform {
     use super::*;
-    use std::os::unix::fs::symlink;
 
     const ICNS: &[u8] = include_bytes!("../assets/icon.icns");
 
@@ -177,7 +181,11 @@ mod platform {
     }
 
     pub fn primary_artifact_exists() -> bool {
-        bundle_dir().join("Contents/MacOS").join(APP_NAME).exists()
+        let exec = bundle_dir().join("Contents/MacOS").join(APP_NAME);
+        match std::fs::symlink_metadata(&exec) {
+            Ok(meta) => meta.file_type().is_file(),
+            Err(_) => false,
+        }
     }
 
     pub fn install(exe: &std::path::Path) -> io::Result<()> {
@@ -209,9 +217,9 @@ mod platform {
         std::fs::write(contents.join("Info.plist"), plist)?;
         std::fs::write(resources.join(format!("{APP_NAME}.icns")), ICNS)?;
 
-        let exec_link = macos.join(APP_NAME);
-        let _ = std::fs::remove_file(&exec_link);
-        symlink(exe, &exec_link)?;
+        let exec_dst = macos.join(APP_NAME);
+        let _ = std::fs::remove_file(&exec_dst);
+        std::fs::copy(exe, &exec_dst)?;
 
         register_with_launch_services(&bundle);
         Ok(())
