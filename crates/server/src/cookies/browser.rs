@@ -102,14 +102,13 @@ pub(crate) async fn check_browser_command(arg: String) -> bool {
 
     command.arg(arg);
 
-    let ok = command
+    command
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
         .await
         .map(|s| s.success())
-        .unwrap_or(false);
-    ok
+        .unwrap_or(false)
 }
 
 pub(crate) async fn find_browser_bin(browser: Browser) -> Option<String> {
@@ -182,7 +181,7 @@ pub(crate) fn browser_command(bin: &str) -> Command {
         c.args(cmd);
         c
     } else {
-        let mut c = Command::new(&cmd[0]);
+        let mut c = Command::new(cmd[0]);
         c.args(&cmd[1..]);
         c
     }
