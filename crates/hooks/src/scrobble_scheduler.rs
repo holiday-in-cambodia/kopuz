@@ -195,9 +195,8 @@ pub fn schedule(
                 }
             }
 
-            let token_raw = config.read().musicbrainz_token.clone();
-            if !token_raw.is_empty() {
-                let auth = musicbrainz_auth(&token_raw);
+            let token = config.read().musicbrainz_token.clone();
+            if !token.trim().is_empty() {
                 let info = listen_additional_info(&track, options.include_musicbrainz_ids);
                 let listen = scrobble::musicbrainz::make_listen(
                     &track.artist,
@@ -206,7 +205,7 @@ pub fn schedule(
                     Some(info),
                     started_at,
                 );
-                match scrobble::musicbrainz::submit_listens(&auth, vec![listen], "single").await {
+                match scrobble::musicbrainz::submit_listens(&token, vec![listen], "single").await {
                     Ok(_) => {
                         tracing::info!("MusicBrainz scrobbled: {} - {}", track.artist, track.title)
                     }
@@ -230,12 +229,11 @@ fn schedule_playing_now_heartbeat(
         return;
     }
 
-    let token_raw = config.read().musicbrainz_token.clone();
-    if token_raw.is_empty() {
+    let token = config.read().musicbrainz_token.clone();
+    if token.trim().is_empty() {
         return;
     }
 
-    let auth = musicbrainz_auth(&token_raw);
     let track = track.clone();
     let include_ids = options.include_musicbrainz_ids;
     let span = tracing::info_span!("scrobble.playing_now", track = track.id.uid().as_str());
@@ -256,7 +254,7 @@ fn schedule_playing_now_heartbeat(
                         Some(now_info),
                     );
                     let _ = scrobble::musicbrainz::submit_listens(
-                        &auth,
+                        &token,
                         vec![playing_now],
                         "playing_now",
                     )
@@ -268,14 +266,6 @@ fn schedule_playing_now_heartbeat(
         }
         .instrument(span),
     );
-}
-
-fn musicbrainz_auth(token: &str) -> String {
-    if token.contains(' ') {
-        token.to_string()
-    } else {
-        format!("Token {token}")
-    }
 }
 
 fn listen_additional_info(

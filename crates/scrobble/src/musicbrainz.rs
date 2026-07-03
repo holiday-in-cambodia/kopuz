@@ -36,18 +36,24 @@ struct ValidateResponse {
     user_name: Option<String>,
 }
 
+pub fn auth_header(token: &str) -> String {
+    let token = token.trim();
+    if token.contains(' ') {
+        token.to_string()
+    } else {
+        format!("Token {token}")
+    }
+}
+
 pub async fn validate_token(token: &str) -> Result<Option<String>, reqwest::Error> {
     let client = Client::new();
     let url = "https://api.listenbrainz.org/1/validate-token";
 
-    let token = token.trim();
-    let auth = if token.contains(' ') {
-        token.to_string()
-    } else {
-        format!("Token {token}")
-    };
-
-    let resp = client.get(url).header("Authorization", auth).send().await?;
+    let resp = client
+        .get(url)
+        .header("Authorization", auth_header(token))
+        .send()
+        .await?;
 
     resp.error_for_status_ref()?;
 
@@ -70,6 +76,7 @@ pub async fn submit_listens(
         .build()
         .unwrap_or_else(|_| Client::new());
     let url = "https://api.listenbrainz.org/1/submit-listens";
+    let auth = auth_header(token);
     let count = listens.len();
     let body = SubmitListens {
         listen_type,
@@ -82,7 +89,7 @@ pub async fn submit_listens(
 
         let result = client
             .post(url)
-            .header("Authorization", token)
+            .header("Authorization", auth.as_str())
             .json(&body)
             .send()
             .await;
