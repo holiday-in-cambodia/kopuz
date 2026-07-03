@@ -47,11 +47,7 @@ pub async fn validate_token(token: &str) -> Result<Option<String>, reqwest::Erro
         format!("Token {token}")
     };
 
-    let resp = client
-        .get(url)
-        .header("Authorization", auth)
-        .send()
-        .await?;
+    let resp = client.get(url).header("Authorization", auth).send().await?;
 
     resp.error_for_status_ref()?;
 
