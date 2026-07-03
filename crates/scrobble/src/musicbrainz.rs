@@ -6,6 +6,9 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 const MAX_ATTEMPTS: u32 = 6;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_BACKOFF: Duration = Duration::from_secs(60);
+// playing_now is ephemeral: the next heartbeat replaces it, so retrying a
+// stale submission only delays everything queued behind it.
+const PLAYING_NOW_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Serialize)]
 pub struct TrackMetadata<'a> {
@@ -71,8 +74,15 @@ pub async fn submit_listens(
     listens: Vec<Listen<'_>>,
     listen_type: &str,
 ) -> Result<(), reqwest::Error> {
+    let is_playing_now = listen_type == "playing_now";
+    let max_attempts = if is_playing_now { 1 } else { MAX_ATTEMPTS };
+    let timeout = if is_playing_now {
+        PLAYING_NOW_TIMEOUT
+    } else {
+        REQUEST_TIMEOUT
+    };
     let client = Client::builder()
-        .timeout(REQUEST_TIMEOUT)
+        .timeout(timeout)
         .build()
         .unwrap_or_else(|_| Client::new());
     let url = "https://api.listenbrainz.org/1/submit-listens";
@@ -98,15 +108,21 @@ pub async fn submit_listens(
             Ok(resp) => resp,
             Err(error) => {
                 let kind = error_kind(&error);
-                if attempt >= MAX_ATTEMPTS || !is_retryable_error(&error) {
-                    tracing::warn!(
-                        "ListenBrainz {listen_type} ({count}) failed after {attempt} attempt(s): {kind}: {error}"
-                    );
+                if attempt >= max_attempts || !is_retryable_error(&error) {
+                    if is_playing_now {
+                        tracing::debug!(
+                            "ListenBrainz {listen_type} ({count}) skipped, next heartbeat will resend: {kind}: {error}"
+                        );
+                    } else {
+                        tracing::warn!(
+                            "ListenBrainz {listen_type} ({count}) failed after {attempt} attempt(s): {kind}: {error}"
+                        );
+                    }
                     return Err(error);
                 }
                 let delay = backoff_delay(attempt, None);
                 tracing::warn!(
-                    "ListenBrainz {listen_type} ({count}) {kind} on attempt {attempt}/{MAX_ATTEMPTS}, retrying in {delay:?}: {error}"
+                    "ListenBrainz {listen_type} ({count}) {kind} on attempt {attempt}/{max_attempts}, retrying in {delay:?}: {error}"
                 );
                 tokio::time::sleep(delay).await;
                 continue;
@@ -135,7 +151,7 @@ pub async fn submit_listens(
             status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error();
         let retry_after = parse_retry_after(&resp);
 
-        if !retryable || attempt >= MAX_ATTEMPTS {
+        if !retryable || attempt >= max_attempts {
             let error = resp.error_for_status_ref().unwrap_err();
             let body = read_body(resp).await;
             tracing::warn!(
@@ -148,7 +164,7 @@ pub async fn submit_listens(
         let delay = backoff_delay(attempt, retry_after);
         let body = read_body(resp).await;
         tracing::warn!(
-            "ListenBrainz {listen_type} ({count}) HTTP {} on attempt {attempt}/{MAX_ATTEMPTS}, retrying in {delay:?} {body}",
+            "ListenBrainz {listen_type} ({count}) HTTP {} on attempt {attempt}/{max_attempts}, retrying in {delay:?} {body}",
             status.as_u16()
         );
         tokio::time::sleep(delay).await;

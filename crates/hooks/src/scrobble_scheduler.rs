@@ -240,6 +240,7 @@ fn schedule_playing_now_heartbeat(
 
     spawn(
         async move {
+            let mut announced = false;
             loop {
                 if *play_generation.read() != generation {
                     return;
@@ -253,12 +254,21 @@ fn schedule_playing_now_heartbeat(
                         Some(&track.album),
                         Some(now_info),
                     );
-                    let _ = scrobble::musicbrainz::submit_listens(
+                    let sent = scrobble::musicbrainz::submit_listens(
                         &token,
                         vec![playing_now],
                         "playing_now",
                     )
-                    .await;
+                    .await
+                    .is_ok();
+                    if sent && !announced {
+                        announced = true;
+                        tracing::info!(
+                            "ListenBrainz playing now: {} - {}",
+                            track.artist,
+                            track.title
+                        );
+                    }
                 }
 
                 tokio::time::sleep(Duration::from_secs(NOW_PLAYING_INTERVAL_SECS)).await;
