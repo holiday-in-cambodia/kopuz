@@ -14,7 +14,7 @@ pub struct TrackMetadata<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     release_name: Option<&'a str>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    additional_info: Option<HashMap<&'a str, &'a str>>,
+    additional_info: Option<HashMap<&'a str, serde_json::Value>>,
 }
 
 #[derive(Serialize)]
@@ -40,9 +40,16 @@ pub async fn validate_token(token: &str) -> Result<Option<String>, reqwest::Erro
     let client = Client::new();
     let url = "https://api.listenbrainz.org/1/validate-token";
 
+    let token = token.trim();
+    let auth = if token.contains(' ') {
+        token.to_string()
+    } else {
+        format!("Token {token}")
+    };
+
     let resp = client
         .get(url)
-        .header("Authorization", token)
+        .header("Authorization", auth)
         .send()
         .await?;
 
@@ -107,10 +114,17 @@ pub async fn submit_listens(
 
         if status.is_success() {
             let body = read_body(resp).await;
-            tracing::info!(
-                "ListenBrainz {listen_type} ({count}) accepted: HTTP {} {body}",
-                status.as_u16()
-            );
+            if listen_type == "playing_now" {
+                tracing::debug!(
+                    "ListenBrainz {listen_type} ({count}) accepted: HTTP {} {body}",
+                    status.as_u16()
+                );
+            } else {
+                tracing::info!(
+                    "ListenBrainz {listen_type} ({count}) accepted: HTTP {} {body}",
+                    status.as_u16()
+                );
+            }
             return Ok(());
         }
 
@@ -181,19 +195,23 @@ fn backoff_delay(attempt: u32, retry_after: Option<Duration>) -> Duration {
     retry_after.unwrap_or(base).min(MAX_BACKOFF)
 }
 
+/// Unix timestamp for "now"; capture when playback starts and pass to `make_listen`.
+pub fn now_unix() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64
+}
+
 pub fn make_listen<'a>(
     artist: &'a str,
     track: &'a str,
     release: Option<&'a str>,
-    additional_info: Option<HashMap<&'a str, &'a str>>,
+    additional_info: Option<HashMap<&'a str, serde_json::Value>>,
+    listened_at: i64,
 ) -> Listen<'a> {
-    let now_unix = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64;
-
     Listen {
-        listened_at: Some(now_unix),
+        listened_at: Some(listened_at),
         track_metadata: TrackMetadata {
             artist_name: artist,
             track_name: track,
@@ -207,7 +225,7 @@ pub fn make_playing_now<'a>(
     artist: &'a str,
     track: &'a str,
     release: Option<&'a str>,
-    additional_info: Option<HashMap<&'a str, &'a str>>,
+    additional_info: Option<HashMap<&'a str, serde_json::Value>>,
 ) -> Listen<'a> {
     Listen {
         listened_at: None,
