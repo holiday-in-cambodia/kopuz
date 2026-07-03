@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-const MAX_ATTEMPTS: u32 = 5;
+const MAX_ATTEMPTS: u32 = 6;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_BACKOFF: Duration = Duration::from_secs(60);
 
