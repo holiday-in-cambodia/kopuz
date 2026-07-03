@@ -61,12 +61,13 @@ pub async fn submit_listens(
     token: &str,
     listens: Vec<Listen<'_>>,
     listen_type: &str,
-) -> Result<reqwest::Response, reqwest::Error> {
+) -> Result<(), reqwest::Error> {
     let client = Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .build()
         .unwrap_or_else(|_| Client::new());
     let url = "https://api.listenbrainz.org/1/submit-listens";
+    let count = listens.len();
     let body = SubmitListens {
         listen_type,
         payload: listens,
@@ -86,13 +87,18 @@ pub async fn submit_listens(
         let resp = match result {
             Ok(resp) => resp,
             Err(error) => {
+                let kind = error_kind(&error);
                 if attempt >= MAX_ATTEMPTS || !is_retryable_error(&error) {
+                    tracing::warn!(
+                        "ListenBrainz {listen_type} ({count}) failed after {attempt} attempt(s): {kind}: {error}"
+                    );
                     return Err(error);
                 }
+                let delay = backoff_delay(attempt, None);
                 tracing::warn!(
-                    "ListenBrainz {listen_type} transport error (attempt {attempt}/{MAX_ATTEMPTS}), retrying: {error}"
+                    "ListenBrainz {listen_type} ({count}) {kind} on attempt {attempt}/{MAX_ATTEMPTS}, retrying in {delay:?}: {error}"
                 );
-                tokio::time::sleep(backoff_delay(attempt, None)).await;
+                tokio::time::sleep(delay).await;
                 continue;
             }
         };
@@ -100,23 +106,58 @@ pub async fn submit_listens(
         let status = resp.status();
 
         if status.is_success() {
-            return Ok(resp);
+            let body = read_body(resp).await;
+            tracing::info!(
+                "ListenBrainz {listen_type} ({count}) accepted: HTTP {} {body}",
+                status.as_u16()
+            );
+            return Ok(());
         }
 
         let retryable =
             status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error();
+        let retry_after = parse_retry_after(&resp);
 
         if !retryable || attempt >= MAX_ATTEMPTS {
-            resp.error_for_status_ref()?;
-            return Ok(resp);
+            let error = resp.error_for_status_ref().unwrap_err();
+            let body = read_body(resp).await;
+            tracing::warn!(
+                "ListenBrainz {listen_type} ({count}) rejected after {attempt} attempt(s): HTTP {} {body}",
+                status.as_u16()
+            );
+            return Err(error);
         }
 
-        let retry_after = parse_retry_after(&resp);
+        let delay = backoff_delay(attempt, retry_after);
+        let body = read_body(resp).await;
         tracing::warn!(
-            "ListenBrainz {listen_type} HTTP {status} (attempt {attempt}/{MAX_ATTEMPTS}), retrying"
+            "ListenBrainz {listen_type} ({count}) HTTP {} on attempt {attempt}/{MAX_ATTEMPTS}, retrying in {delay:?} {body}",
+            status.as_u16()
         );
-        tokio::time::sleep(backoff_delay(attempt, retry_after)).await;
+        tokio::time::sleep(delay).await;
     }
+}
+
+fn error_kind(error: &reqwest::Error) -> &'static str {
+    if error.is_timeout() {
+        "timeout"
+    } else if error.is_connect() {
+        "connection error"
+    } else if error.is_request() {
+        "request error"
+    } else {
+        "transport error"
+    }
+}
+
+async fn read_body(resp: reqwest::Response) -> String {
+    let text = resp.text().await.unwrap_or_default();
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    let snippet: String = trimmed.chars().take(300).collect();
+    format!("body={snippet}")
 }
 
 fn is_retryable_error(error: &reqwest::Error) -> bool {

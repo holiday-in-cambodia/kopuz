@@ -47,6 +47,11 @@ pub fn schedule(
     spawn(
         async move {
             if duration_secs < 30 {
+                tracing::info!(
+                    "scrobble skipped: track too short ({duration_secs}s < 30s): {} - {}",
+                    track.artist,
+                    track.title
+                );
                 return;
             }
 
@@ -123,6 +128,11 @@ pub fn schedule(
             sleep_threshold(Duration::from_secs(threshold_secs)).await;
 
             if *play_generation.read() != generation {
+                tracing::info!(
+                    "scrobble skipped: track changed before {threshold_secs}s threshold: {} - {}",
+                    track.artist,
+                    track.title
+                );
                 return;
             }
 
