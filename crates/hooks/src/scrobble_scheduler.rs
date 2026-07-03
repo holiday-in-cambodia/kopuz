@@ -283,8 +283,8 @@ fn listen_additional_info(
     include_ids: bool,
 ) -> HashMap<&'static str, serde_json::Value> {
     let mut map = HashMap::new();
-    map.insert("media_player", serde_json::Value::from("rusic"));
-    map.insert("submission_client", serde_json::Value::from("rusic"));
+    map.insert("media_player", serde_json::Value::from("kopuz"));
+    map.insert("submission_client", serde_json::Value::from("kopuz"));
     map.insert(
         "submission_client_version",
         serde_json::Value::from(env!("CARGO_PKG_VERSION")),
