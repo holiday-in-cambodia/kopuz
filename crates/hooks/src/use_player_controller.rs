@@ -595,6 +595,7 @@ impl PlayerController {
                     let mut pending_resume = self.pending_resume;
                     let cfg_signal = self.config;
                     let active_source = self.active_source;
+                    let db = self.db;
                     let mut radio_task = self.radio_task;
                     let mut current_song_title = self.current_song_title;
                     let mut current_song_artist = self.current_song_artist;
@@ -869,6 +870,7 @@ impl PlayerController {
                                         is_playing,
                                         Some(active_source),
                                         ScrobbleOptions::REMOTE_NATIVE,
+                                        db.peek().clone(),
                                     );
 
                                     let cover_url = cover_url.clone();
@@ -977,6 +979,7 @@ impl PlayerController {
                                 self.is_playing,
                                 None,
                                 ScrobbleOptions::LOCAL,
+                                self.db.peek().clone(),
                             );
                         }
                     }
@@ -1003,6 +1006,7 @@ pub fn use_player_controller(
     current_track_snapshot: Signal<Option<Track>>,
     volume: Signal<f32>,
     config: Signal<AppConfig>,
+    config_loaded_ok: Signal<bool>,
     db_handle: db::Db,
 ) -> PlayerController {
     let play_generation = use_signal(|| 0);
@@ -1019,6 +1023,38 @@ pub fn use_player_controller(
     let playback_error = use_signal(|| None::<String>);
     let db = use_signal(move || db_handle);
     let active_source = use_context::<Signal<::server::source::ActiveSource>>();
+
+    // Scrobbles queued while offline (issue #335): retry once on startup, in
+    // case connectivity came back between sessions.
+    let mut drained = use_signal(|| false);
+    use_effect(move || {
+        if !*config_loaded_ok.read() || *drained.peek() {
+            return;
+        }
+        drained.set(true);
+        let creds = {
+            let cfg = config.peek();
+            scrobble::queue::Credentials {
+                lastfm: (!cfg.lastfm_api_key.is_empty() && !cfg.lastfm_api_secret.is_empty()).then(
+                    || {
+                        (
+                            cfg.lastfm_api_key.clone(),
+                            cfg.lastfm_api_secret.clone(),
+                            cfg.lastfm_session_key.clone(),
+                        )
+                    },
+                ),
+                librefm_session_key: (!cfg.librefm_session_key.is_empty())
+                    .then(|| cfg.librefm_session_key.clone()),
+                listenbrainz_token: (!cfg.musicbrainz_token.trim().is_empty())
+                    .then(|| cfg.musicbrainz_token.clone()),
+            }
+        };
+        let db_handle = db.peek().clone();
+        spawn(async move {
+            scrobble::queue::drain(&db_handle, &creds).await;
+        });
+    });
 
     PlayerController {
         player,
