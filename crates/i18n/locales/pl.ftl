@@ -344,6 +344,9 @@ channel_mode_mono = Mono
 channel_mode_left_only = Tylko lewy
 channel_mode_right_only = Tylko prawy
 channel_mode_swap_left_right = Zamień L/P
+device_change_behavior = On output device change
+device_change_resume = Keep playing
+device_change_pause = Pause
 
 crossfade = Płynne przejście
 crossfade_off = Wył.

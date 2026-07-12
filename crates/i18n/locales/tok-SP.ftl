@@ -345,6 +345,9 @@ channel_mode_mono = 󱤴 󱥯
 channel_mode_left_only = 󱥭 󱤿 󱥔
 channel_mode_right_only = 󱥭 󱥬 󱥔
 channel_mode_swap_left_right = 󱤴 󱥭
+device_change_behavior = On output device change
+device_change_resume = Keep playing
+device_change_pause = Pause
 
 crossfade = 󱥭 󱤴
 crossfade_off = 󱤄

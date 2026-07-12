@@ -344,6 +344,9 @@ channel_mode_mono = 모노
 channel_mode_left_only = 왼쪽만
 channel_mode_right_only = 오른쪽만
 channel_mode_swap_left_right = L/R 스왑
+device_change_behavior = On output device change
+device_change_resume = Keep playing
+device_change_pause = Pause
 
 crossfade = 크로스페이드
 crossfade_off = 끄기

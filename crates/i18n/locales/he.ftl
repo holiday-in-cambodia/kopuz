@@ -344,6 +344,9 @@ channel_mode_mono = מונו
 channel_mode_left_only = שמאל בלבד
 channel_mode_right_only = ימין בלבד
 channel_mode_swap_left_right = החלף ש/י
+device_change_behavior = On output device change
+device_change_resume = Keep playing
+device_change_pause = Pause
 
 crossfade = מעבר הדרגתי
 crossfade_off = כבוי

@@ -209,6 +209,35 @@ impl ChannelMode {
     }
 }
 
+/// What playback does after the output device changes (unplugged headphones,
+/// OS default switched) and the engine has migrated to the new device.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub enum DeviceChangeBehavior {
+    /// Keep playing on the new device at the same position.
+    Resume,
+    /// Migrate to the new device but hold paused until the user resumes.
+    #[default]
+    Pause,
+}
+
+impl DeviceChangeBehavior {
+    pub const ALL: &'static [Self] = &[Self::Resume, Self::Pause];
+
+    pub const fn value_str(self) -> &'static str {
+        match self {
+            Self::Resume => "resume",
+            Self::Pause => "pause",
+        }
+    }
+
+    pub fn from_value_str(value: &str) -> Self {
+        match value {
+            "pause" => Self::Pause,
+            _ => Self::Resume,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum EqPreset {
     #[default]
@@ -554,6 +583,8 @@ pub struct AppConfig {
     #[serde(default)]
     pub equalizer: EqualizerSettings,
     #[serde(default)]
+    pub device_change_behavior: DeviceChangeBehavior,
+    #[serde(default)]
     pub ytdlp_output_dir: String,
     #[serde(default)]
     pub ytdlp_options: YtdlpOptions,
@@ -712,6 +743,7 @@ impl Default for AppConfig {
             back_behavior: BackBehavior::RewindThenPrev,
             channel_mode: ChannelMode::Stereo,
             equalizer: EqualizerSettings::default(),
+            device_change_behavior: DeviceChangeBehavior::Pause,
             ytdlp_output_dir: String::new(),
             ytdlp_options: YtdlpOptions::default(),
             ytdlp_history: Vec::new(),
