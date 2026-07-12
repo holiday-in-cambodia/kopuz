@@ -454,3 +454,15 @@ add_photo = ഫോട്ടോ ചേർക്കുക
 change_photo = ഫോട്ടോ മാറ്റുക
 remove_photo = ഫോട്ടോ നീക്കം ചെയ്യുക
 metadata_edit_warning = ശൂന്യമായ ഫീൽഡുകൾ ആ ടാഗ് നീക്കം ചെയ്യുന്നു. നേരിട്ട് ഫയലിലേക്ക് എഴുതുന്നു — അൺഡൂ ഇല്ല.
+
+sort_by = ക്രമീകരിക്കുക
+sort_then = പിന്നെ
+sort_none = ക്രമീകരണം ഇല്ല
+sort_add_criterion = മാനദണ്ഡം ചേർക്കുക
+sort_remove = നീക്കം ചെയ്യുക
+sort_ascending = ആരോഹണം
+sort_descending = അവരോഹണം
+sort_field_title = ശീർഷകം
+sort_field_artist = കലാകാരൻ
+sort_field_year = വർഷം
+sort_field_genre = വിഭാഗം

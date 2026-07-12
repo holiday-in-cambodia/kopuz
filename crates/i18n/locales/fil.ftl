@@ -454,3 +454,15 @@ add_photo = Magdagdag ng larawan
 change_photo = Palitan ang larawan
 remove_photo = Alisin ang larawan
 metadata_edit_warning = Ang walang lamang field ay aalisin ang tag na iyon. Direktang isinusulat sa file — walang undo.
+
+sort_by = Ayusin ayon sa
+sort_then = pagkatapos
+sort_none = Walang pag-aayos
+sort_add_criterion = Magdagdag ng pamantayan
+sort_remove = Tanggalin
+sort_ascending = Pataas
+sort_descending = Pababa
+sort_field_title = Pamagat
+sort_field_artist = Artista
+sort_field_year = Taon
+sort_field_genre = Genre

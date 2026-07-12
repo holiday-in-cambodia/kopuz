@@ -460,3 +460,15 @@ add_photo = o pana e sitelen
 change_photo = o ante e sitelen
 remove_photo = o weka e sitelen
 metadata_edit_warning = nimi ala li weka e nimi nanpa. ni li ante e lipu. sina ken ala ante e ni.
+
+sort_by = o leti kepeken
+sort_then = kin la
+sort_none = leti ala
+sort_add_criterion = o namako e nasin
+sort_remove = o weka
+sort_ascending = tan lili tawa suli
+sort_descending = tan suli tawa lili
+sort_field_title = nimi
+sort_field_artist = jan pali
+sort_field_year = tenpo sike
+sort_field_genre = kule

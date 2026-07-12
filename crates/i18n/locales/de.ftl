@@ -460,3 +460,15 @@ add_photo = Foto hinzufügen
 change_photo = Foto ändern
 remove_photo = Foto entfernen
 metadata_edit_warning = Leere Felder entfernen das Tag. Wird direkt in die Datei geschrieben — kein Rückgängig.
+
+sort_by = Sortieren nach
+sort_then = dann
+sort_none = Keine Sortierung
+sort_add_criterion = Kriterium hinzufügen
+sort_remove = Entfernen
+sort_ascending = Aufsteigend
+sort_descending = Absteigend
+sort_field_title = Titel
+sort_field_artist = Künstler
+sort_field_year = Jahr
+sort_field_genre = Genre

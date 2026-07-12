@@ -460,3 +460,15 @@ add_photo = Προσθήκη φωτογραφίας
 change_photo = Αλλαγή φωτογραφίας
 remove_photo = Αφαίρεση φωτογραφίας
 metadata_edit_warning = Τα κενά πεδία αφαιρούν την ετικέτα. Εγγραφή απευθείας στο αρχείο — χωρίς αναίρεση.
+
+sort_by = Ταξινόμηση κατά
+sort_then = έπειτα
+sort_none = Χωρίς ταξινόμηση
+sort_add_criterion = Προσθήκη κριτηρίου
+sort_remove = Αφαίρεση
+sort_ascending = Αύξουσα
+sort_descending = Φθίνουσα
+sort_field_title = Τίτλος
+sort_field_artist = Καλλιτέχνης
+sort_field_year = Έτος
+sort_field_genre = Είδος

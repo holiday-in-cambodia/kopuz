@@ -454,3 +454,15 @@ add_photo = Tambahkan foto
 change_photo = Ubah foto
 remove_photo = Hapus foto
 metadata_edit_warning = Bidang kosong akan menghapus tag tersebut. Menulis langsung ke file — tidak ada fungsi undo.
+
+sort_by = Urutkan menurut
+sort_then = lalu
+sort_none = Tanpa pengurutan
+sort_add_criterion = Tambah kriteria
+sort_remove = Hapus
+sort_ascending = Naik
+sort_descending = Turun
+sort_field_title = Judul
+sort_field_artist = Artis
+sort_field_year = Tahun
+sort_field_genre = Genre

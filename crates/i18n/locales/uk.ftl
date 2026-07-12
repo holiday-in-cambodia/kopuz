@@ -460,3 +460,15 @@ add_photo = Додати фото
 change_photo = Змінити фото
 remove_photo = Видалити фото
 metadata_edit_warning = Порожні поля видаляють цей тег. Запис безпосередньо у файл — без скасування.
+
+sort_by = Сортувати за
+sort_then = потім
+sort_none = Без сортування
+sort_add_criterion = Додати критерій
+sort_remove = Видалити
+sort_ascending = За зростанням
+sort_descending = За спаданням
+sort_field_title = Назва
+sort_field_artist = Виконавець
+sort_field_year = Рік
+sort_field_genre = Жанр

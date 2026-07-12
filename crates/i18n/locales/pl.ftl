@@ -460,3 +460,15 @@ add_photo = Dodaj zdjęcie
 change_photo = Zmień zdjęcie
 remove_photo = Usuń zdjęcie
 metadata_edit_warning = Puste pola usuwają dany tag. Zapis bezpośrednio do pliku — bez cofania.
+
+sort_by = Sortuj według
+sort_then = następnie
+sort_none = Bez sortowania
+sort_add_criterion = Dodaj kryterium
+sort_remove = Usuń
+sort_ascending = Rosnąco
+sort_descending = Malejąco
+sort_field_title = Tytuł
+sort_field_artist = Wykonawca
+sort_field_year = Rok
+sort_field_genre = Gatunek

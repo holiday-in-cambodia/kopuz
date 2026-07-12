@@ -460,3 +460,15 @@ add_photo = Fénykép hozzáadása
 change_photo = Fénykép cseréje
 remove_photo = Fénykép eltávolítása
 metadata_edit_warning = Az üres mezők eltávolítják az adott címkét. Közvetlenül a fájlba ír — nincs visszavonás.
+
+sort_by = Rendezés
+sort_then = majd
+sort_none = Nincs rendezés
+sort_add_criterion = Feltétel hozzáadása
+sort_remove = Eltávolítás
+sort_ascending = Növekvő
+sort_descending = Csökkenő
+sort_field_title = Cím
+sort_field_artist = Előadó
+sort_field_year = Év
+sort_field_genre = Műfaj

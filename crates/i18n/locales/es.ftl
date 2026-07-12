@@ -461,3 +461,15 @@ add_photo = Añadir foto
 change_photo = Cambiar foto
 remove_photo = Quitar foto
 metadata_edit_warning = Los campos vacíos eliminan esa etiqueta. Se escribe directamente en el archivo, sin deshacer.
+
+sort_by = Ordenar por
+sort_then = luego
+sort_none = Sin ordenar
+sort_add_criterion = Añadir criterio
+sort_remove = Eliminar
+sort_ascending = Ascendente
+sort_descending = Descendente
+sort_field_title = Título
+sort_field_artist = Artista
+sort_field_year = Año
+sort_field_genre = Género

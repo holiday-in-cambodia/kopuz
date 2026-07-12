@@ -460,3 +460,15 @@ add_photo = הוסף תמונה
 change_photo = החלף תמונה
 remove_photo = הסר תמונה
 metadata_edit_warning = שדות ריקים מוחקים את התג. נכתב ישירות לקובץ — אין ביטול.
+
+sort_by = מיין לפי
+sort_then = ואז
+sort_none = ללא מיון
+sort_add_criterion = הוספת קריטריון
+sort_remove = הסרה
+sort_ascending = עולה
+sort_descending = יורד
+sort_field_title = כותרת
+sort_field_artist = אמן
+sort_field_year = שנה
+sort_field_genre = ז’אנר

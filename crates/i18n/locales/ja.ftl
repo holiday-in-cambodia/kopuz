@@ -466,3 +466,15 @@ add_photo = 写真を追加
 change_photo = 写真を変更
 remove_photo = 写真を削除
 metadata_edit_warning = 空欄にするとそのタグは削除されます。ファイルに直接書き込まれ、元に戻せません。
+
+sort_by = 並べ替え
+sort_then = 次に
+sort_none = 並べ替えなし
+sort_add_criterion = 条件を追加
+sort_remove = 削除
+sort_ascending = 昇順
+sort_descending = 降順
+sort_field_title = タイトル
+sort_field_artist = アーティスト
+sort_field_year = 年
+sort_field_genre = ジャンル

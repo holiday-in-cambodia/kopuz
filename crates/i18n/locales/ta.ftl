@@ -454,3 +454,15 @@ add_photo = புகைப்படத்தைச் சேர்
 change_photo = புகைப்படத்தை மாற்று
 remove_photo = புகைப்படத்தை அகற்று
 metadata_edit_warning = காலியான புலங்கள் அந்த குறிச்சொல்லை அகற்றும். நேரடியாக கோப்பில் எழுதப்படுகிறது — செயல்தவிர்ப்பு இல்லை.
+
+sort_by = வரிசைப்படுத்து
+sort_then = பிறகு
+sort_none = வரிசை இல்லை
+sort_add_criterion = அளவுகோலைச் சேர்
+sort_remove = அகற்று
+sort_ascending = ஏறுவரிசை
+sort_descending = இறங்குவரிசை
+sort_field_title = தலைப்பு
+sort_field_artist = கலைஞர்
+sort_field_year = ஆண்டு
+sort_field_genre = வகை

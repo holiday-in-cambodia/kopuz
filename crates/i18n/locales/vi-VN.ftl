@@ -454,3 +454,15 @@ add_photo = Thêm ảnh
 change_photo = Đổi ảnh
 remove_photo = Xóa ảnh
 metadata_edit_warning = Để trống trường nào sẽ xóa thẻ đó. Ghi trực tiếp vào tệp — không thể hoàn tác.
+
+sort_by = Sắp xếp theo
+sort_then = rồi
+sort_none = Không sắp xếp
+sort_add_criterion = Thêm tiêu chí
+sort_remove = Xóa
+sort_ascending = Tăng dần
+sort_descending = Giảm dần
+sort_field_title = Tiêu đề
+sort_field_artist = Nghệ sĩ
+sort_field_year = Năm
+sort_field_genre = Thể loại

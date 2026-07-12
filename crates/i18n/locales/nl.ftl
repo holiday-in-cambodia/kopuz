@@ -454,3 +454,15 @@ add_photo = Foto toevoegen
 change_photo = Foto wijzigen
 remove_photo = Foto verwijderen
 metadata_edit_warning = Lege velden verwijderen die tag. Wordt direct naar het bestand geschreven — geen ongedaan maken.
+
+sort_by = Sorteren op
+sort_then = daarna
+sort_none = Geen sortering
+sort_add_criterion = Criterium toevoegen
+sort_remove = Verwijderen
+sort_ascending = Oplopend
+sort_descending = Aflopend
+sort_field_title = Titel
+sort_field_artist = Artiest
+sort_field_year = Jaar
+sort_field_genre = Genre
