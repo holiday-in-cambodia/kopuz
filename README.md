@@ -92,8 +92,8 @@ media source carries its own credentials and its own favorites.
 - **File-Type Badges**: Local tracks show a small format badge (MP3, FLAC, WAV,
   etc.) in track rows so you can see the source format at a glance.
 - **Search**: Search across artists, albums, and tracks with real-time results,
-  plus a **quick search** overlay you can pop open from anywhere to jump straight
-  to what you're looking for.
+  plus a **quick search** overlay you can pop open from anywhere to jump
+  straight to what you're looking for.
 - **Custom UI Fonts**: Bring your own font for the interface and make Kopuz look
   the way you want.
 - **Listening Logs**: Tracks play counts locally so you can see what you
@@ -384,8 +384,8 @@ The setup dialog offers two methods:
   **isolated browser profile** (a fresh, separate session; your normal browsing
   is never touched), waits for you to log in, and extracts the session cookies.
   Pick which installed Chromium-family browser to use (Chrome, Chromium, Brave,
-  Edge, Vivaldi, or Helium). This unlocks your **library, Liked Music, playlists,
-  and followed artists**.
+  Edge, Vivaldi, or Helium). This unlocks your **library, Liked Music,
+  playlists, and followed artists**.
 
 - **Continue without signing in (anonymous)** - no sign-in, no cookies. You can
   **browse, search, open artist/album/playlist pages, start mix radio, and play
