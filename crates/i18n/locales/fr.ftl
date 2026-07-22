@@ -48,7 +48,17 @@ connectivity = Connectivité
 discord_presence_paused = Afficher le statut Discord en pause
 discord_presence_source = Afficher la source multimédia dans le statut Discord
 reduce_animations = Reduire Les Animation
+fullscreen_use_player_bar = Utiliser la barre de lecture comme commandes en plein écran
+cover_art_background = Pochette en arrière-plan
+cover_art_darkening = Assombrissement de la pochette
+cover_art_blur = Flou de la pochette
+custom_background = Arrière-plan personnalisé
+choose_image = Choisir une image
+jump_to_current_song = Aller à la chanson en cours
+hide_side_panel = Masquer le panneau latéral
+show_side_panel = Afficher le panneau latéral
 show_source_toggle = Afficheur De Source Toggle
+show_row_images = Afficher les images des lignes
 titlebar_mode = Barre de titre
 titlebar_custom = Personnalisé (dessiné par l'app)
 titlebar_system = Décorations système
@@ -132,6 +142,7 @@ heart_track_to_add_server = Ajoutez ce morceau aux favoris pendant la lecture po
 
 # Search & Placeholders
 search_placeholder = Chercher Des Artistes , albums ou tracks..
+quick_search_placeholder = Tapez pour rechercher, Entrée pour lire…
 no_results_found = Aucun Résultat pour "{ $query }"
 listenbrainz_token_placeholder = Entrez vous token ListenBrainz 
 lastfm_api_key_placeholder = Entrez votre clé API Last.fm

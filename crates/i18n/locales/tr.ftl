@@ -48,7 +48,17 @@ connectivity = Bağlantı
 discord_presence_paused = Discord durumu duraklatıldığında göster
 discord_presence_source = Medya kaynağını Discord durumunda göster
 reduce_animations = Animasyonları Azalt
+fullscreen_use_player_bar = Tam ekranda oynatıcı çubuğunu kontrol olarak kullan
+cover_art_background = Kapak Resmini Arka Plan Yap
+cover_art_darkening = Kapak Resmi Karartma
+cover_art_blur = Kapak Resmi Bulanıklığı
+custom_background = Özel Arka Plan
+choose_image = Görsel Seç
+jump_to_current_song = Çalan şarkıya git
+hide_side_panel = Yan paneli gizle
+show_side_panel = Yan paneli göster
 show_source_toggle = Sidebar'da Kaynağı Göster
+show_row_images = Satır Görsellerini Göster
 titlebar_mode = Başlık çubuğu
 titlebar_custom = Özel (uygulama tarafından çizilen)
 titlebar_system = Sistem süslemeleri
@@ -136,6 +146,7 @@ heart_track_to_add_server = Eklemek ve sunucunuza senkronize etmek için çalark
 
 # Search & Placeholders
 search_placeholder = Sanatçı, albüm veya parça ara...
+quick_search_placeholder = Aramak için yazın, çalmak için Enter…
 no_results_found = "{ $query }" için sonuç bulunamadı
 listenbrainz_token_placeholder = ListenBrainz token'ınızı girin
 lastfm_api_key_placeholder = Last.fm API anahtarınızı girin

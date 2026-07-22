@@ -1,6 +1,7 @@
 use components::{
-    bottombar::Bottombar, compact_player::CompactPlayer, download_overlay::DownloadOverlay,
-    fullscreen::Fullscreen, rightbar::Rightbar, sidebar::Sidebar, titlebar::Titlebar,
+    CoverArtBackground, QuickSearch, bottombar::Bottombar, compact_player::CompactPlayer,
+    download_overlay::DownloadOverlay, fullscreen::Fullscreen, rightbar::Rightbar,
+    sidebar::Sidebar, titlebar::Titlebar,
 };
 #[cfg(not(target_os = "android"))]
 use dioxus::desktop::tao::dpi::LogicalSize;
@@ -452,6 +453,7 @@ fn App() -> Element {
     // empty DB still counts). Library/playlists/favorites have no such flag
     // anymore — they're targeted per-row writes, never full-replace.
     let mut config_loaded_ok = use_signal(|| false);
+    let mut queue_loaded_ok = use_signal(|| false);
 
     let mut pending_queue_state_snapshot = use_signal(|| None::<PersistedQueueState>);
     let mut pending_queue_state_revision = use_signal(|| 0u64);
@@ -479,15 +481,16 @@ fn App() -> Element {
                 let db = db.clone();
                 // None = the queue is empty (a cleared queue must persist as
                 // empty, not resurrect) — but only once the saved queue has
-                // actually been restored, else a quit during startup would
-                // wipe it.
-                let queue_snap = (*initial_load_done.peek()).then(|| {
-                    pending_queue_state_snapshot
-                        .peek()
-                        .clone()
-                        .map(queue_state::snapshot)
-                        .unwrap_or_default()
-                });
+                // actually been restored, else a quit during startup (or a
+                // failed load) would wipe it.
+                let queue_snap =
+                    (*initial_load_done.peek() && *queue_loaded_ok.peek()).then(|| {
+                        pending_queue_state_snapshot
+                            .peek()
+                            .clone()
+                            .map(queue_state::snapshot)
+                            .unwrap_or_default()
+                    });
                 // Library/playlists/favorites need no flush — every mutation
                 // already committed as a targeted write when it happened.
                 let cfg = (*config_loaded_ok.peek()).then(|| {
@@ -556,15 +559,16 @@ fn App() -> Element {
     });
 
     use_effect(move || {
-        let _ = dioxus::document::eval(
-            r#"document.addEventListener('error',function(e){
+        let _ = dioxus::document::eval(&format!(
+            r#"document.addEventListener('error',function(e){{
                 var t=e.target;
-                if(t.tagName==='IMG'&&!t.dataset.fallback&&t.src){
+                if(t.tagName==='IMG'&&!t.dataset.fallback&&t.src){{
                     t.dataset.fallback='1';
-                    t.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27400%27 height=%27400%27 viewBox=%270 0 400 400%27%3E%3Crect width=%27400%27 height=%27400%27 fill=%27%231e1b2e%27/%3E%3Ccircle cx=%27200%27 cy=%27180%27 r=%2770%27 fill=%27none%27 stroke=%27%233d3466%27 stroke-width=%276%27/%3E%3Cpath d=%27M155 280 Q200 240 245 280%27 fill=%27none%27 stroke=%27%233d3466%27 stroke-width=%276%27 stroke-linecap=%27round%27/%3E%3C/svg%3E';
-                }
-            },true);"#,
-        );
+                    t.src='{}';
+                }}
+            }},true);"#,
+            utils::DEFAULT_COVER_SVG.replace('\'', "%27"),
+        ));
     });
 
     use_effect(move || {
@@ -572,7 +576,12 @@ fn App() -> Element {
         if !url.is_empty() {
             spawn(
                 async move {
-                    if let Some(colors) = utils::color::get_palette_from_url(&url).await {
+                    let colors =
+                        utils::offload(
+                            async move { utils::color::get_palette_from_url(&url).await },
+                        )
+                        .await;
+                    if let Some(colors) = colors {
                         palette.set(Some(colors));
                     }
                 }
@@ -980,7 +989,7 @@ fn App() -> Element {
     }
 
     use_effect(move || {
-        if !*initial_load_done.read() {
+        if !*initial_load_done.read() || !*queue_loaded_ok.read() {
             return;
         }
 
@@ -1052,7 +1061,11 @@ fn App() -> Element {
                 // on success: its save is the one remaining whole-value write,
                 // and persisting a default born of a read failure would wipe
                 // real settings/servers.
-                let cfg_loaded = match db.load_config().await {
+                let cfg_loaded = match db
+                    .load_config()
+                    .instrument(tracing::info_span!("startup.load_config"))
+                    .await
+                {
                     Ok(c) => {
                         config_loaded_ok.set(true);
                         c
@@ -1062,10 +1075,24 @@ fn App() -> Element {
                         None
                     }
                 };
-                let queue_loaded = db.load_queue().await.ok();
+                let queue_loaded = match db
+                    .load_queue()
+                    .instrument(tracing::info_span!("startup.load_queue"))
+                    .await
+                {
+                    Ok(snap) => {
+                        queue_loaded_ok.set(true);
+                        Some(snap)
+                    }
+                    Err(e) => {
+                        tracing::error!(error = %e, "failed to load queue from db — queue saves disabled this session");
+                        None
+                    }
+                };
 
                 let cfg_loaded = cfg_loaded.unwrap_or_default();
                 {
+                    let _apply = tracing::info_span!("startup.apply_config").entered();
                     let loaded = cfg_loaded;
                     config.set(loaded.clone());
                     configured_music_dirs.set(loaded.music_directory.clone());
@@ -1085,23 +1112,31 @@ fn App() -> Element {
                 // startup. An unselected source stays Local (the config default);
                 // the user picks a server explicitly via the sidebar.
 
-                if let Some(snap) = queue_loaded
-                    && let Some(queue_state) = queue_state::sanitize(PersistedQueueState {
-                        version: snap.version,
-                        queue: snap.queue,
-                        current_queue_index: snap.current_queue_index,
-                        progress_secs: snap.progress_secs,
-                        shuffle_order: snap.shuffle_order,
-                        shuffle_enabled: snap.shuffle_enabled,
+                let queue_state = utils::offload(async move {
+                    queue_loaded.and_then(|snap| {
+                        queue_state::sanitize(PersistedQueueState {
+                            version: snap.version,
+                            queue: snap.queue,
+                            current_queue_index: snap.current_queue_index,
+                            progress_secs: snap.progress_secs,
+                            shuffle_order: snap.shuffle_order,
+                            shuffle_enabled: snap.shuffle_enabled,
+                        })
                     })
+                })
+                .instrument(tracing::info_span!("startup.sanitize_queue"))
+                .await;
                 {
-                    ctrl.restore_queue_state(
-                        queue_state.queue,
-                        queue_state.current_queue_index,
-                        queue_state.progress_secs,
-                        queue_state.shuffle_order,
-                        queue_state.shuffle_enabled,
-                    );
+                    let _restore = tracing::info_span!("startup.restore_queue").entered();
+                    if let Some(queue_state) = queue_state {
+                        ctrl.restore_queue_state(
+                            queue_state.queue,
+                            queue_state.current_queue_index,
+                            queue_state.progress_secs,
+                            queue_state.shuffle_order,
+                            queue_state.shuffle_enabled,
+                        );
+                    }
                 }
 
                 initial_load_done.set(true);
@@ -1619,16 +1654,42 @@ fn App() -> Element {
     let update_banner_state = update_banner.read().clone();
 
     let background_style = use_memo(move || {
-        if config.read().theme == "album-art" {
+        let conf = config.read();
+        if conf.theme == "album-art"
+            && !conf.cover_art_background
+            && conf.custom_background_path.is_empty()
+        {
             utils::color::get_background_style(palette.read().as_deref())
         } else {
             "background-color: var(--color-black); background-image: none;".to_string()
         }
     });
 
+    let cover_background = use_memo(move || {
+        let conf = config.read();
+        if !conf.custom_background_path.is_empty() {
+            let path = std::path::PathBuf::from(&conf.custom_background_path);
+            return utils::format_artwork_url(Some(&path)).map(|url| url.as_ref().to_string());
+        }
+        if conf.cover_art_background {
+            let url = current_song_cover_url.read().clone();
+            return (!url.is_empty()).then_some(url);
+        }
+        None
+    });
+
     let reduce_animations = use_memo(move || config.read().reduce_animations);
     let active_source = use_memo(move || config.read().active_source.clone());
     let switch_source = hooks::source_switch::use_switch_source();
+    let mut show_quick_search = use_signal(|| false);
+    let quick_search_source = hooks::use_db_queries::use_active_source();
+    use_effect(move || {
+        if !*show_quick_search.read() {
+            let _ = dioxus::document::eval(
+                "const el = document.getElementById('app-root'); if (el) el.focus();",
+            );
+        }
+    });
 
     rsx! {
         // we use this component here to prevent re-diffing to prevent warns in console
@@ -1636,7 +1697,8 @@ fn App() -> Element {
         WindowsToolbarIconAssets {}
 
         div {
-            class: "flex flex-col h-screen text-white select-none overflow-x-hidden {theme_class}",
+            id: "app-root",
+            class: "relative z-0 flex flex-col h-screen text-white select-none overflow-x-hidden {theme_class}",
             style: "{background_style}",
             dir: "{dir}",
             "data-platform": if cfg!(target_os = "android") { "android" } else { "desktop" },
@@ -1658,11 +1720,20 @@ fn App() -> Element {
                     let c = *compact_mode.read();
                     compact_mode.set(!c);
                     evt.prevent_default();
+                } else if (mods.meta() || mods.ctrl())
+                    && matches!(&key, Key::Character(s) if s.eq_ignore_ascii_case("k"))
+                {
+                    let c = *show_quick_search.read();
+                    show_quick_search.set(!c);
+                    evt.prevent_default();
                 } else if key == Key::Character(" ".into()) {
                     ctrl.toggle();
                     evt.prevent_default();
                 }
             },
+            if let Some(cover) = cover_background() {
+                CoverArtBackground { cover }
+            }
             if cfg!(any(target_os = "linux", target_os = "windows")) {
                 div { dir: "ltr", Titlebar {} }
             }
@@ -2159,6 +2230,38 @@ fn App() -> Element {
             }
             DownloadOverlay { queue: download_queue }
             CompactPlayer {}
+            if *show_quick_search.read() {
+                QuickSearch {
+                    show: show_quick_search,
+                    on_play: move |(track, fallback): (reader::Track, Vec<reader::Track>)| {
+                        let read_db = consume_context::<hooks::ReadDb>();
+                        let filter = hooks::TrackFilter {
+                            source: quick_search_source(),
+                            sort: hooks::TrackSort::Fields(config.peek().library_sort.clone()),
+                            ..Default::default()
+                        };
+                        spawn(async move {
+                            let all = read_db
+                                .tracks_page(
+                                    &filter,
+                                    hooks::Page {
+                                        offset: 0,
+                                        limit: u32::MAX,
+                                    },
+                                )
+                                .await
+                                .unwrap_or_default();
+                            if let Some(idx) = all.iter().position(|t| t.id == track.id) {
+                                queue.set(all);
+                                ctrl.play_track(idx);
+                            } else if let Some(idx) = fallback.iter().position(|t| t.id == track.id) {
+                                queue.set(fallback);
+                                ctrl.play_track(idx);
+                            }
+                        });
+                    },
+                }
+            }
             if config.read().player_bar_position == config::PlayerBarPosition::Bottom {
                 Bottombar {
                     config,

@@ -48,7 +48,17 @@ connectivity = الاتصال
 discord_presence_paused = إظهار حالة Discord عند الإيقاف المؤقت
 discord_presence_source = إظهار مصدر الوسائط في حالة Discord
 reduce_animations = تقليل الرسوم المتحركة
+fullscreen_use_player_bar = استخدام شريط المشغّل كعناصر تحكم في وضع ملء الشاشة
+cover_art_background = غلاف الألبوم كخلفية
+cover_art_darkening = تعتيم غلاف الألبوم
+cover_art_blur = تمويه غلاف الألبوم
+custom_background = خلفية مخصصة
+choose_image = اختيار صورة
+jump_to_current_song = الانتقال إلى الأغنية الحالية
+hide_side_panel = إخفاء اللوحة الجانبية
+show_side_panel = إظهار اللوحة الجانبية
 show_source_toggle = إظهار إختيار تبديل المصدر
+show_row_images = إظهار صور الصفوف
 titlebar_mode = شريط العنوان
 titlebar_custom = مخصص (يرسمه التطبيق)
 titlebar_system = زخارف النظام
@@ -136,6 +146,7 @@ heart_track_to_add_server = أضف إعجابك بمقطع أثناء تشغيل
 
 # Search & Placeholders
 search_placeholder = ابحث عن فنانين أو ألبومات أو مقاطع...
+quick_search_placeholder = اكتب للبحث، اضغط Enter للتشغيل…
 no_results_found = لم يتم العثور على نتائج لـ "{ $query }"
 listenbrainz_token_placeholder = أدخل رمز ListenBrainz الخاص بك
 lastfm_api_key_placeholder = أدخل مفتاح API الخاص بـ Last.fm

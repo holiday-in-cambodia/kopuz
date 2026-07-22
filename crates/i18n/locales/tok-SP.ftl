@@ -48,7 +48,17 @@ connectivity = 󱥩󱤬󱥭
 discord_presence_paused = 󱥄󱤮󱤉 󱤬󱥍󱤎󱦐󱥛 󱥫
 discord_presence_source = 󱥄󱤮󱤉 󱤎 󱤬 󱤬󱥍󱤎󱦐󱥛󱦜󱤜󱦝󱦑
 reduce_animations = 󱥄󱤨󱤉󱥩
+fullscreen_use_player_bar = Use player bar as fullscreen controls
+cover_art_background = Cover Art Background
+cover_art_darkening = Cover Art Darkening
+cover_art_blur = Cover Art Blur
+custom_background = Custom Background
+choose_image = Choose Image
+jump_to_current_song = Jump to current song
+hide_side_panel = Hide side panel
+show_side_panel = Show side panel
 show_source_toggle = 󱥄󱤮󱤉󱤎󱤆
+show_row_images = Show Row Images
 titlebar_mode = 󱤤󱤎
 titlebar_custom = 󱤤󱥎󱤎
 titlebar_system = 󱤤󱥎󱤎󱥛
@@ -132,6 +142,7 @@ heart_track_to_add_server = 󱥄󱤭󱤉󱥀󱥅󱤬󱤠󱤕󱤡󱤕󱤧󱤖󱥩
 
 # Search & Placeholders
 search_placeholder = 󱥄󱤃󱤉󱤑󱥉, 󱤉󱤟󱥍󱤕󱥖, 󱤉󱤕󱦜󱦜󱦜
+quick_search_placeholder = 󱥄󱤃, 󱥄󱤕󱤻󱦜󱦜󱦜
 no_results_found = "{ $query }"󱤧󱤬󱤂
 listenbrainz_token_placeholder = 󱥄󱥌󱤉"token ListenBrainz"
 lastfm_api_key_placeholder = o pana e Last.fm API key sina

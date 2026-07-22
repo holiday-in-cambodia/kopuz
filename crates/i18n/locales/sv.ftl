@@ -63,9 +63,19 @@ connectivity = Uppkoppling
 discord_presence_paused = Visa pausad status i Discord
 discord_presence_source = Visa mediekälla i Discord-status
 reduce_animations = Minska animationer
+fullscreen_use_player_bar = Använd spelarfältet som helskärmskontroller
+cover_art_background = Omslag som bakgrund
+cover_art_darkening = Omslagsförmörkning
+cover_art_blur = Omslagsoskärpa
+custom_background = Anpassad bakgrund
+choose_image = Välj bild
+jump_to_current_song = Hoppa till aktuell låt
+hide_side_panel = Dölj sidopanelen
+show_side_panel = Visa sidopanelen
 auto_check_updates = Sök automatiskt efter uppdateringar
 minimize_to_tray = Minimera till systemfältet
 show_source_toggle = Visa växling för källa
+show_row_images = Visa radbilder
 titlebar_mode = Titelfält
 titlebar_custom = Anpassad (appens egen)
 titlebar_system = Systemets fönsterdekorationer
@@ -213,6 +223,7 @@ heart_track_to_add_server = Markera en låt som favorit medan den spelas för at
 
 # Search & Placeholders
 search_placeholder = Sök efter artister, album eller låtar...
+quick_search_placeholder = Skriv för att söka, Enter för att spela…
 no_results_found = Inga resultat hittades för "{ $query }"
 listenbrainz_token_placeholder = Ange din ListenBrainz-token
 lastfm_api_key_placeholder = Ange din Last.fm API-nyckel

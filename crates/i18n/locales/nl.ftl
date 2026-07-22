@@ -63,9 +63,19 @@ connectivity = Connectiviteit
 discord_presence_paused = Gepauzeerde Discord-status tonen
 discord_presence_source = Mediabron tonen in Discord-status
 reduce_animations = Animaties verminderen
+fullscreen_use_player_bar = Spelerbalk gebruiken als volledigscherm-bediening
+cover_art_background = Hoes als achtergrond
+cover_art_darkening = Hoes verdonkeren
+cover_art_blur = Hoes vervagen
+custom_background = Aangepaste achtergrond
+choose_image = Afbeelding kiezen
+jump_to_current_song = Naar het huidige nummer springen
+hide_side_panel = Zijpaneel verbergen
+show_side_panel = Zijpaneel tonen
 auto_check_updates = Automatisch op updates controleren
 minimize_to_tray = Naar systeemvak minimaliseren
 show_source_toggle = Bronschakelaar tonen
+show_row_images = Rijafbeeldingen tonen
 titlebar_mode = Titelbalk
 titlebar_custom = Aangepast (door app getekend)
 titlebar_system = Systeemdecoraties
@@ -213,6 +223,7 @@ heart_track_to_add_server = Geef een nummer een hartje terwijl het speelt om het
 
 # Search & Placeholders
 search_placeholder = Zoek naar artiesten, albums of nummers...
+quick_search_placeholder = Typ om te zoeken, Enter om af te spelen…
 no_results_found = Geen resultaten gevonden voor "{ $query }"
 listenbrainz_token_placeholder = Voer je ListenBrainz-token in
 lastfm_api_key_placeholder = Voer je Last.fm-API-sleutel in

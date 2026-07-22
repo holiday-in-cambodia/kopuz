@@ -48,7 +48,17 @@ connectivity = Підключення
 discord_presence_paused = Показати статус Discord на паузі
 discord_presence_source = Показувати джерело медіа у статусі Discord
 reduce_animations = Зменшити кількість анімацій
+fullscreen_use_player_bar = Використовувати панель плеєра як керування в повноекранному режимі
+cover_art_background = Обкладинка як тло
+cover_art_darkening = Затемнення обкладинки
+cover_art_blur = Розмиття обкладинки
+custom_background = Власне тло
+choose_image = Вибрати зображення
+jump_to_current_song = Перейти до поточної пісні
+hide_side_panel = Сховати бічну панель
+show_side_panel = Показати бічну панель
 show_source_toggle = Показати перемикач джерела
+show_row_images = Показувати зображення в рядках
 titlebar_mode = Рядок заголовка
 titlebar_custom = Власний (малює застосунок)
 titlebar_system = Системні прикраси
@@ -136,6 +146,7 @@ heart_track_to_add_server = Уподобайте трек поки він гра
 
 # Search & Placeholders
 search_placeholder = Шукайте виконавців, альбоми та пісні...
+quick_search_placeholder = Введіть для пошуку, Enter для відтворення…
 no_results_found = Нічого не знайдено по запиту "{ $query }"
 listenbrainz_token_placeholder = Введіть свій ключ (токен) від ListenBrainz
 lastfm_api_key_placeholder = Введіть ключ API Last.fm

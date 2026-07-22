@@ -63,9 +63,19 @@ connectivity = Koneksyon
 discord_presence_paused = Ipakita ang Naka-pause na Discord status
 discord_presence_source = Ipakita ang media source sa Discord status
 reduce_animations = Bawasan ang mga Animation
+fullscreen_use_player_bar = Gamitin ang player bar bilang mga kontrol sa fullscreen
+cover_art_background = Cover art bilang background
+cover_art_darkening = Pagpapadilim ng cover art
+cover_art_blur = Pag-blur ng cover art
+custom_background = Custom na background
+choose_image = Pumili ng larawan
+jump_to_current_song = Pumunta sa kasalukuyang kanta
+hide_side_panel = Itago ang side panel
+show_side_panel = Ipakita ang side panel
 auto_check_updates = Awtomatikong Pag-check ng mga Update
 minimize_to_tray = I-minimize sa system tray
 show_source_toggle = Ipakita ang Source Toggle
+show_row_images = Ipakita ang mga larawan sa row
 titlebar_mode = Titlebar
 titlebar_custom = Custom (iginuhit ng app)
 titlebar_system = Mga dekorasyon ng system
@@ -213,6 +223,7 @@ heart_track_to_add_server = I-heart ang isang track habang naka-play para idagda
 
 # Search & Placeholders
 search_placeholder = Maghanap ng mga artista, album, o track...
+quick_search_placeholder = Mag-type para maghanap, Enter para tumugtog…
 no_results_found = Walang nahanap na resulta para sa "{ $query }"
 listenbrainz_token_placeholder = Ilagay ang iyong ListenBrainz token
 lastfm_api_key_placeholder = Ilagay ang iyong Last.fm API Key

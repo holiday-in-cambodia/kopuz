@@ -48,7 +48,17 @@ connectivity = קישוריות
 discord_presence_paused = הצגת סטטוס Discord במצב מושהה
 discord_presence_source = הצגת מקור המדיה בסטטוס Discord
 reduce_animations = הפחתת אנימציות
+fullscreen_use_player_bar = שימוש בסרגל הנגן כפקדים במסך מלא
+cover_art_background = עטיפת האלבום כרקע
+cover_art_darkening = החשכת עטיפת האלבום
+cover_art_blur = טשטוש עטיפת האלבום
+custom_background = רקע מותאם אישית
+choose_image = בחירת תמונה
+jump_to_current_song = מעבר לשיר הנוכחי
+hide_side_panel = הסתרת הלוח הצדדי
+show_side_panel = הצגת הלוח הצדדי
 show_source_toggle = הצגת מקור
+show_row_images = הצגת תמונות בשורות
 titlebar_mode = סרגל כותרת
 titlebar_custom = מותאם אישית (מצויר על ידי האפליקציה)
 titlebar_system = עיצובי מערכת
@@ -136,6 +146,7 @@ heart_track_to_add_server = סמנו שיר בלב בזמן שהוא מתנגן 
 
 # Search & Placeholders
 search_placeholder = חיפוש אמנים, אלבומים או שירים...
+quick_search_placeholder = הקלידו לחיפוש, Enter לניגון…
 no_results_found = לא נמצאו תוצאות עבור "{ $query }"
 listenbrainz_token_placeholder = הזנת טוקן ListenBrainz
 lastfm_api_key_placeholder = הזן את מפתח ה-API של Last.fm

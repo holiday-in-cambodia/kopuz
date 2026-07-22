@@ -48,7 +48,17 @@ connectivity = Konnektivität
 discord_presence_paused = Pausierten Discord-Status anzeigen
 discord_presence_source = Medienquelle im Discord-Status anzeigen
 reduce_animations = Animationen reduzieren
+fullscreen_use_player_bar = Player-Leiste als Vollbild-Steuerung verwenden
+cover_art_background = Cover als Hintergrund
+cover_art_darkening = Cover-Abdunklung
+cover_art_blur = Cover-Unschärfe
+custom_background = Eigener Hintergrund
+choose_image = Bild auswählen
+jump_to_current_song = Zum aktuellen Titel springen
+hide_side_panel = Seitenleiste ausblenden
+show_side_panel = Seitenleiste einblenden
 show_source_toggle = Quellenumschalter anzeigen
+show_row_images = Zeilenbilder anzeigen
 titlebar_mode = Titelleiste
 titlebar_custom = Benutzerdefiniert (App-gezeichnet)
 titlebar_system = Systemdekorationen
@@ -136,6 +146,7 @@ heart_track_to_add_server = Markiere einen Titel mit „Gefällt mir“, um ihn 
 
 # Search & Placeholders
 search_placeholder = Suche nach Künstlern, Alben oder Titeln...
+quick_search_placeholder = Tippen zum Suchen, Enter zum Abspielen…
 no_results_found = Keine Ergebnisse für „{ $query }“ gefunden
 listenbrainz_token_placeholder = Gib deinen ListenBrainz-Token ein
 lastfm_api_key_placeholder = Gib deinen Last.fm-API-Schlüssel ein

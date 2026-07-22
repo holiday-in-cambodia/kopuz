@@ -63,9 +63,19 @@ connectivity = Konektivitas
 discord_presence_paused = Tampilkan status Discord saat dijeda
 discord_presence_source = Tampilkan sumber media di status Discord
 reduce_animations = Kurangi Animasi
+fullscreen_use_player_bar = Gunakan bilah pemutar sebagai kontrol layar penuh
+cover_art_background = Sampul sebagai latar belakang
+cover_art_darkening = Penggelapan sampul
+cover_art_blur = Keburaman sampul
+custom_background = Latar belakang kustom
+choose_image = Pilih gambar
+jump_to_current_song = Lompat ke lagu saat ini
+hide_side_panel = Sembunyikan panel samping
+show_side_panel = Tampilkan panel samping
 auto_check_updates = Otomatis Memeriksa Pembaruan
 minimize_to_tray = Minimalkan ke baki sistem
 show_source_toggle = Tampilkan Tombol Sumber
+show_row_images = Tampilkan gambar baris
 titlebar_mode = Bilah Judul
 titlebar_custom = Kustom (app-drawn)
 titlebar_system = Dekorasi Sistem
@@ -213,6 +223,7 @@ heart_track_to_add_server = Tekan tombol suka pada lagu yang diputar untuk menam
 
 # Search & Placeholders
 search_placeholder = Cari untuk artis, album atau trek...
+quick_search_placeholder = Ketik untuk mencari, Enter untuk memutar…
 no_results_found = Tidak ada hasil yang ditemukan untuk "{ $query }"
 listenbrainz_token_placeholder = Masukkan token ListenBrainz anda
 lastfm_api_key_placeholder = Masukkan Last.fm API Key anda

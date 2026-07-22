@@ -671,6 +671,29 @@ pub struct AppConfig {
     pub language: String,
     #[serde(default)]
     pub reduce_animations: bool,
+    /// When enabled, fullscreen mode hides its own transport controls and lets
+    /// the player bar act as the multimedia controller instead.
+    #[serde(default)]
+    pub fullscreen_use_player_bar: bool,
+    /// Fullscreen: the Up Next / Lyrics side panel is collapsed. Toggled from
+    /// the fullscreen UI itself, remembered across sessions.
+    #[serde(default)]
+    pub fullscreen_tabs_collapsed: bool,
+    /// Use the current track's cover as the app background, overriding the
+    /// active theme's background (including the album-art gradient).
+    #[serde(default)]
+    pub cover_art_background: bool,
+    /// How strongly the cover art background is darkened, in percent (0-95).
+    #[serde(default = "default_cover_art_darkening")]
+    pub cover_art_darkening: u8,
+    /// Blur radius of the cover art background, in pixels (0 = sharp).
+    #[serde(default)]
+    pub cover_art_blur: u8,
+    /// Absolute path to a user-chosen image used as the app background,
+    /// overriding both the theme background and the cover art background.
+    /// Empty = unset. Shares the darkening/blur treatment with cover art.
+    #[serde(default)]
+    pub custom_background_path: String,
     /// Opt-in chrome/Perfetto performance trace. Read at startup (the
     /// subscriber is built once), so a change needs a restart. Adds runtime
     /// overhead — surfaced with a warning in settings.
@@ -684,6 +707,8 @@ pub struct AppConfig {
     pub minimize_to_tray: bool,
     #[serde(default = "default_show_source_toggle")]
     pub show_source_toggle: bool,
+    #[serde(default = "default_true")]
+    pub show_row_images: bool,
     #[serde(default = "default_sidebar_order")]
     pub sidebar_order: Vec<String>,
     #[serde(default = "default_volume")]
@@ -798,6 +823,10 @@ fn default_auto_check_updates() -> bool {
     true
 }
 
+fn default_cover_art_darkening() -> u8 {
+    60
+}
+
 pub fn default_sidebar_order() -> Vec<String> {
     vec![
         "home".to_string(),
@@ -880,10 +909,17 @@ impl Default for AppConfig {
             librefm_session_key: String::new(),
             language: default_language(),
             reduce_animations: false,
+            fullscreen_use_player_bar: false,
+            fullscreen_tabs_collapsed: false,
+            cover_art_background: false,
+            cover_art_darkening: default_cover_art_darkening(),
+            cover_art_blur: 0,
+            custom_background_path: String::new(),
             tracing_enabled: false,
             auto_check_updates: default_auto_check_updates(),
             minimize_to_tray: false,
             show_source_toggle: default_show_source_toggle(),
+            show_row_images: true,
             sidebar_order: default_sidebar_order(),
             volume: default_volume(),
             volume_scroll_step: default_volume_scroll_step(),

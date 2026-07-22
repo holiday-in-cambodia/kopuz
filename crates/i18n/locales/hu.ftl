@@ -48,7 +48,17 @@ connectivity = Kapcsolódás
 discord_presence_paused = Szüneteltetett Discord állapot megjelenítése
 discord_presence_source = Médiaforrás megjelenítése a Discord állapotban
 reduce_animations = Animációk csökkentése
+fullscreen_use_player_bar = Lejátszósáv használata teljes képernyős vezérlőként
+cover_art_background = Borító háttérként
+cover_art_darkening = Borító sötétítése
+cover_art_blur = Borító elmosása
+custom_background = Egyéni háttér
+choose_image = Kép kiválasztása
+jump_to_current_song = Ugrás az aktuális dalra
+hide_side_panel = Oldalpanel elrejtése
+show_side_panel = Oldalpanel megjelenítése
 show_source_toggle = Forrás kapcsoló megjelenítése
+show_row_images = Sorképek megjelenítése
 titlebar_mode = Címsor
 titlebar_custom = Egyéni (alkalmazás által rajzolt)
 titlebar_system = Rendszerdekorációk
@@ -136,6 +146,7 @@ heart_track_to_add_server = Kedveld a dalt lejátszás közben, hogy itt megjele
 
 # Search & Placeholders
 search_placeholder = Keress előadókra, albumokra vagy dalokra...
+quick_search_placeholder = Írjon a kereséshez, Enter a lejátszáshoz…
 no_results_found = Nincs találat a következőre: "{ $query }"
 listenbrainz_token_placeholder = Add meg a ListenBrainz tokent
 lastfm_api_key_placeholder = Add meg a Last.fm API-kulcsodat

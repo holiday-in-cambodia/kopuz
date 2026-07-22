@@ -48,7 +48,17 @@ connectivity = Conectivitate
 discord_presence_paused = Afișează statusul Discord în pauză
 discord_presence_source = Afișează sursa media în statusul Discord
 reduce_animations = Reducere Animații
+fullscreen_use_player_bar = Folosește bara de redare drept comenzi pe ecran complet
+cover_art_background = Coperta ca fundal
+cover_art_darkening = Întunecarea copertei
+cover_art_blur = Estomparea copertei
+custom_background = Fundal personalizat
+choose_image = Alege imaginea
+jump_to_current_song = Sari la piesa curentă
+hide_side_panel = Ascunde panoul lateral
+show_side_panel = Afișează panoul lateral
 show_source_toggle = Comutator Sursă
+show_row_images = Afișează imaginile din rânduri
 titlebar_mode = Bară de titlu
 titlebar_custom = Personalizat (desenat de aplicație)
 titlebar_system = Decorații sistem
@@ -136,6 +146,7 @@ heart_track_to_add_server = Adaugă o piesă la favorite în timp ce este redat�
 
 # Search & Placeholders
 search_placeholder = Caută artiști, albume sau piese...
+quick_search_placeholder = Tastați pentru a căuta, Enter pentru redare…
 no_results_found = Niciun rezultat pentru "{ $query }"
 listenbrainz_token_placeholder = Introdu token-ul ListenBrainz
 lastfm_api_key_placeholder = Introdu cheia API Last.fm

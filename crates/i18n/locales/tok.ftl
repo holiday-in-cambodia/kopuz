@@ -48,7 +48,17 @@ connectivity = tawa lon ma
 discord_presence_paused = o lukin e lon pi ilo Siko lon tenpo awen
 discord_presence_source = o lukin e ilo pi kalama lon lon pi ilo Siko
 reduce_animations = o lili e tawa
+fullscreen_use_player_bar = Use player bar as fullscreen controls
+cover_art_background = Cover Art Background
+cover_art_darkening = Cover Art Darkening
+cover_art_blur = Cover Art Blur
+custom_background = Custom Background
+choose_image = Choose Image
+jump_to_current_song = Jump to current song
+hide_side_panel = Hide side panel
+show_side_panel = Show side panel
 show_source_toggle = o lukin e ilo ante
+show_row_images = Show Row Images
 titlebar_mode = lawa ilo
 titlebar_custom = lawa pi ilo
 titlebar_system = lawa pi ilo sewi
@@ -136,6 +146,7 @@ heart_track_to_add_server = o luka e nena olin lon kute kalama la kalama li kama
 
 # Search & Placeholders
 search_placeholder = o alasa e jan pali, e kulupu pi kalama sama, e kalama...
+quick_search_placeholder = o sitelen tawa alasa, o luka e Enter tawa kalama musi…
 no_results_found = "{ $query }" li lon ala
 listenbrainz_token_placeholder = o pana e "token ListenBrainz"
 lastfm_api_key_placeholder = o pana e Last.fm API key sina
