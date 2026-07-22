@@ -1716,6 +1716,11 @@ fn App() -> Element {
     let dir = if is_rtl { "rtl" } else { "ltr" };
     let content_row_class = "flex flex-1 overflow-hidden";
     let update_banner_state = update_banner.read().clone();
+    let update_banner_padding = if cfg!(target_os = "macos") {
+        "pl-20 pr-4"
+    } else {
+        "px-4"
+    };
 
     let background_style = use_memo(move || {
         let conf = config.read();
@@ -1904,7 +1909,7 @@ fn App() -> Element {
                 div {
                     class: "flex-shrink-0",
                     div {
-                        class: "flex items-center justify-between gap-3 px-4 py-2 bg-sky-500/15 border-b border-sky-500/20 text-sky-200 text-sm",
+                        class: "flex items-center justify-between gap-3 {update_banner_padding} py-2 bg-sky-500/15 border-b border-sky-500/20 text-sky-200 text-sm",
                         div {
                             class: "flex items-center gap-2",
                             i { class: "fa-solid fa-download text-xs" }
