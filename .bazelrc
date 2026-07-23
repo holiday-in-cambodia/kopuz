@@ -4,6 +4,8 @@ common --announce_rc
 
 build --incompatible_strict_action_env
 build --action_env=PATH
+build --action_env=PKG_CONFIG_PATH
+build --action_env=NIX_LDFLAGS
 build --show_timestamps
 build --verbose_failures
 build --@rules_rust//rust/settings:clippy.toml=//:.clippy.toml
